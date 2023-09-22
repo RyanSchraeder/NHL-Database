@@ -1,0 +1,18 @@
+pandas
+numpy
+scikit-learn
+lightgbm
+xgboost
+scipy
+seaborn
+cloudpickle
+cachetools
+imbalanced-learn
+optuna
+tensorflow
+lxml
+matplotlib
+boto3
+snowflake-connector-python[pandas]
+# snowflake-snowpark-python[pandas]
+python-dotenv
