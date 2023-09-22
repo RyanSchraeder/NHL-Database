@@ -56,7 +56,7 @@ class SnowflakeIngest(object):
             # Build S3 URI to correct path location
             # s3_path = s3_path + '/playoffs/'
         elif source == 'teams':
-            self.url = f"{self.endpoint}NHL_{year}_games.html#stats"
+            self.url = f"{self.endpoint}NHL_{year}.html#stats"
             self.filename = f"NHL_{year}_team_stats"
             # Build S3 URI to correct path location
             # s3_path = s3_path + '/playoffs/'
@@ -68,6 +68,8 @@ class SnowflakeIngest(object):
     def file_parser(self):
         """ Download raw source data and upload to S3
             Data Source: hockeyreference.com
+
+            TODO: Complete teams statistics and playoff record transformations
         """
         try:
             response = get_legacy_session().get(self.url)
@@ -91,6 +93,35 @@ class SnowflakeIngest(object):
                 dataframe['length_of_game_min'] = [(int(i[0]) * 60) + int(i[1:]) for i in dataframe['length_of_game_min']]
 
                 dataframe.date = dataframe.date.apply(pd.to_datetime)
+
+            if self.source == 'teams':
+                # Team name cleaning
+                dataframe['Team'] = [str(i).replace('*', '') for i in dataframe['Team']]
+
+                # Creating Column for Total Goals
+
+                dataframe['G'] = dataframe.GF + dataframe.GA
+
+                # Creating Column for Total Power-Play Goals
+
+                dataframe['PPG'] = dataframe.PP + dataframe.PPA
+
+                # Creating Column for Total Games in Shootouts
+
+                dataframe['SHOOTOUTS'] = dataframe.SOW + dataframe.SOL
+
+                def percents(df):
+                    for column, row in df.iteritems():
+                        if '%' in column:
+                            for item in row:
+                                if item < 1:
+                                    row += row * 100
+
+                    return df
+
+                team_stats_df = percents(dataframe)
+
+            # if self.source == 'playoffs'
 
             logger.info(
                 f'Retrieved data with columns: {dataframe.columns}'

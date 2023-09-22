@@ -31,7 +31,6 @@ def snowflake_schema():
     "raw_team_stats": """
         create or replace table raw_team_stats
         (
-            TeamId integer PRIMARY KEY not null,
             Rk integer,
             Team varchar(100),
             AvAge integer,
@@ -105,13 +104,12 @@ def snowflake_schema():
 def snowflake_ingestion():
     return {
     # RAW TEAM STATISTICS. USES THE S3 INTEGRATION STAGE FOR THE S3 RAW DATA.
-    # "team_stats_raw": """
-    #     copy into raw_team_stats
-    #     from @nhl_raw_data/teams
-    #     file_format=parquet
-    #     pattern = '.*parquet.*'
-    # """,
-
+    "team_stats_raw": """
+        copy into raw_team_stats
+        from @nhl_raw_data_csv/teams
+        file_format = csv
+        pattern = '.*csv.*'
+    """,
     # REGULAR SEASON DATA CLEAN. USES THE S3 INTEGRATION STAGE FOR THE S3 RAW DATA.
     "reg_season_raw": """
             COPY INTO regular_season
