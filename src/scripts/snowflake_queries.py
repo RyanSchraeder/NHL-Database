@@ -1,16 +1,28 @@
 # QUERY EXECUTIONS
 def snowflake_stages():
     return {
-    "create_parquet": """
-        create or replace file format parquet type='parquet'
-    """,
-    "parquet": """
-        CREATE OR REPLACE STAGE nhl_raw_data
-        STORAGE_INTEGRATION = "aws_s3_integration"
-        URL = 's3://nhl-data-raw/'
-        -- CREDENTIALS = ''
-        FILE_FORMAT = parquet
-    """
+        "create_parquet": """
+            create or replace file format parquet type='parquet'
+        """,
+        "create_csv": """
+            create or replace file format csv type='csv' -- creates the file format to map incoming data structure to CSV
+            field_delimiter = ','
+            skip_header=1
+        """,
+        "csv": """
+            CREATE OR REPLACE STAGE nhl_raw_data_csv
+            STORAGE_INTEGRATION = "aws_s3_integration"
+            URL = 's3://nhl-data-raw/'
+            -- CREDENTIALS = ''
+            FILE_FORMAT = csv
+        """,
+        "parquet": """
+            CREATE OR REPLACE STAGE nhl_raw_data_parquet
+            STORAGE_INTEGRATION = "aws_s3_integration"
+            URL = 's3://nhl-data-raw/'
+            -- CREDENTIALS = ''
+            FILE_FORMAT = parquet
+        """
 }
 
 
@@ -66,14 +78,12 @@ def snowflake_schema():
     "regular_season": """
         create or replace table regular_season (
             date date,
-            away_team varchar(100), -- inherit team_id
+            away_team_id varchar(100),
             away_goals integer,
-            home_team varchar(100), -- inherit team_id
+            home_team_id varchar(100),
             home_goals integer,
-            length_of_game_min integer,
-            away_outcome integer,
-            home_outcome integer,
-            updated_at varchar(100)
+            length_of_game_min varchar(100),
+            updated_at date
         )
     """,
     "playoff_season": """
@@ -95,18 +105,18 @@ def snowflake_schema():
 def snowflake_ingestion():
     return {
     # RAW TEAM STATISTICS. USES THE S3 INTEGRATION STAGE FOR THE S3 RAW DATA.
-    "team_stats_raw": """
-        copy into raw_team_stats
-        from @nhl_raw_data/teams
-        file_format=csv
-        pattern = '.*parquet.*'
-    """,
+    # "team_stats_raw": """
+    #     copy into raw_team_stats
+    #     from @nhl_raw_data/teams
+    #     file_format=parquet
+    #     pattern = '.*parquet.*'
+    # """,
 
     # REGULAR SEASON DATA CLEAN. USES THE S3 INTEGRATION STAGE FOR THE S3 RAW DATA.
     "reg_season_raw": """
-            copy into regular_season
-            from @nhl_raw_data/season
-            file_format=csv
-            pattern = '.*parquet.*'
+            COPY INTO regular_season
+            FROM @nhl_raw_data_csv/season
+            FILE_FORMAT = csv
+            PATTERN = '.*csv.*';
     """
 }

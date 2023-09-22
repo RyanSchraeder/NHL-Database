@@ -41,8 +41,8 @@ class SnowflakeIngest(object):
         self.s3_bucket = s3_bucket_name
         self.conn = get_snowflake_connection(snowflake_conn)
 
-        curr_date = dt.date.today()
-        year = curr_date.year
+        self.curr_date = dt.date.today()
+        year = self.curr_date.year
 
         # Build endpoint URL
         if source == 'seasons':
@@ -62,19 +62,35 @@ class SnowflakeIngest(object):
             # s3_path = s3_path + '/playoffs/'
 
         # Run raw ingestion of data from source
-        output_df = self.file_parser(self.url)
+        output_df = self.file_parser()
         self.s3_parser(output_df)
 
-    @staticmethod
-    def file_parser(url: str):
+    def file_parser(self):
         """ Download raw source data and upload to S3
             Data Source: hockeyreference.com
         """
         try:
-            response = get_legacy_session().get(url)
+            response = get_legacy_session().get(self.url)
             dataframes = pd.read_html(response.text)
 
-            dataframe = pd.concat(dataframes, axis=0, ignore_index=True)
+            dataframe = pd.concat(dataframes, axis=0, ignore_index=False)
+
+            if self.source == 'seasons':
+                dataframe = dataframe.rename(columns=({
+                    'Date': 'date', 'Visitor': 'away_team_id', 'Home': 'home_team_id', 'G': 'away_goals', 'G.1': 'home_goals',
+                    'LOG': 'length_of_game_min'
+                }))
+                dataframe = dataframe[
+                    ['date', 'away_team_id', 'away_goals', 'home_team_id', 'home_goals', 'length_of_game_min']
+                ]
+
+                dataframe['updated_at'] = self.curr_date
+
+                # Transforming data
+                dataframe['length_of_game_min'] = [i.replace(':', '') for i in dataframe['length_of_game_min']]
+                dataframe['length_of_game_min'] = [(int(i[0]) * 60) + int(i[1:]) for i in dataframe['length_of_game_min']]
+
+                dataframe.date = dataframe.date.apply(pd.to_datetime)
 
             logger.info(
                 f'Retrieved data with columns: {dataframe.columns}'
@@ -87,23 +103,21 @@ class SnowflakeIngest(object):
         except Exception as e:
             logger.error(f'An error occurred while retrieving raw data: {e}')
 
-
     @s3_conn
     def s3_parser(self, data):
         try:
             # Establish connection
             s3_client, s3_resource = boto3.client('s3'), boto3.resource('s3')
 
-            # Convert DF to Parquet File
-            path = f'../data/{self.filename}.parquet'
-            data.to_parquet(path)
+            # Convert DF to CSV File
+            path = f'../data/{self.filename}.csv'
+            data.to_csv(path, index=False)
 
             # Build the targets
-            dst, filename = f'{self.s3_bucket}', f'{self.source}/{self.filename}.parquet'
+            dst, filename = f'{self.s3_bucket}', f'{self.source}/{self.filename}.csv'
 
             # Retrieve S3 paths & store raw file to s3
             logger.info(f'Storing parsed data in S3 at {filename}')
-
             s3_client.upload_file(
                 path, dst, filename
             )
@@ -115,6 +129,8 @@ class SnowflakeIngest(object):
         try:
             # Cursor & Connection
             curs, conn = self.conn.cursor(), self.conn
+
+            # Retrieve formatted queries and execute
             response = {}
             for idx, query in queries.items():
                 curs.execute_async(query)
@@ -172,4 +188,4 @@ if __name__ in "__main__":
     schema = execute.snowflake_query_exec(snowflake_schema())
 
     # INGEST RAW DATA
-    # execute.snowflake_query_exec(snowflake_ingestion)
+    execute.snowflake_query_exec(snowflake_ingestion())
