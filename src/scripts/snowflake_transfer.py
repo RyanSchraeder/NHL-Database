@@ -144,6 +144,8 @@ class SnowflakeIngest(object):
             path = f'../data/{self.filename}.csv'
             data.to_csv(path, index=False)
 
+            logger.info(f'Data stored at {path}')
+
             # Build the targets
             dst, filename = f'{self.s3_bucket}', f'{self.source}/{self.filename}.csv'
 
@@ -189,7 +191,7 @@ class SnowflakeIngest(object):
 
 
 if __name__ in "__main__":
-
+    start = time.time()
     parser = argparse.ArgumentParser(
         prog="SnowflakeIngestion",
         description="Move data from raw S3 uploads to a produced Schema in Snowflake"
@@ -220,3 +222,6 @@ if __name__ in "__main__":
 
     # INGEST RAW DATA
     execute.snowflake_query_exec(snowflake_ingestion())
+
+    end = time.time() - start
+    logger.info(f'Process Completed. Time elapsed: {end}')
