@@ -1,37 +1,43 @@
 import pandas as pd
 import argparse
-import requests
-from io import StringIO
-import json
+
 import datetime as dt
 import time
 import sys
-import os
 import boto3
-from secrets_access import get_secret
-from typing import List, Any, Optional
+
 from logger import logger
 from connectors import get_snowflake_connection, s3_conn
 from snowflake.connector import ProgrammingError
 from connectors import get_legacy_session
-from snowflake_queries import snowflake_stages, snowflake_schema, snowflake_ingestion
+from snowflake_queries import (
+    snowflake_stages,
+    snowflake_schema,
+    snowflake_ingestion,
+    snowflake_cleanup,
+    snowflake_checks
+)
+from preprocessing import DataTransform
 
 # Data Source: https://www.hockey-reference.com/leagues/NHL_2022.html ##
 # TODO: S3 connection has been established. Now, the data needs to be moved from S3
 #  into Snowflake from the existing stages.
 #       So:
-#           1) Create connection in code to Snowflake that will create the schema and upload the raw data.
-#             2) Establish a Snowpark session to transform the data and upload it into a clean schema.
-#               3) Automate these processes in steps 1 & 2 with MWAA.
+#           1) Create connection in code to Snowflake that will create the schema and upload the raw data. DONE
+#           2) Establish a Snowpark session to transform the data and upload it into a clean schema. DONE
+#           3) Automate these processes in steps 1 & 2 with MWAA.
 
 
 # LOGGING
 logger = logger('snowflake_transfer')
 
+# Data transformations
+transform = DataTransform
+
 
 class SnowflakeIngest(object):
 
-    def __init__(self, source, endpoint, s3_bucket_name, snowflake_conn):
+    def __init__(self, source, endpoint, year, s3_bucket_name, snowflake_conn):
         """
             :param s3_bucket_name: The bucket used to access S3 directories
             :param snowflake_conn: The connection method used to connect to Snowflake: str ('standard', 'spark')
@@ -40,26 +46,26 @@ class SnowflakeIngest(object):
         self.source = source
         self.s3_bucket = s3_bucket_name
         self.conn = get_snowflake_connection(snowflake_conn)
+        self.date = dt.date.today()
 
-        self.curr_date = dt.date.today()
-        year = self.curr_date.year
+        if year == "":
+            self.year = self.date.year
+        else:
+            self.year = year
 
         # Build endpoint URL
-        if source == 'seasons':
-            self.url = f"{self.endpoint}NHL_{year}_games.html#games"
-            self.filename = f"NHL_{year}_regular_season"
-            # Build S3 URI to correct path location
-            # s3_path = s3_path + '/season/'
-        elif source == 'playoffs':
-            self.url = f"{self.endpoint}NHL_{year}_games.html#games_playoffs"
-            self.filename = f"NHL_{year}_playoff_season"
-            # Build S3 URI to correct path location
-            # s3_path = s3_path + '/playoffs/'
-        elif source == 'teams':
-            self.url = f"{self.endpoint}NHL_{year}.html#stats"
-            self.filename = f"NHL_{year}_team_stats"
-            # Build S3 URI to correct path location
-            # s3_path = s3_path + '/playoffs/'
+        match source:
+            case 'seasons':
+                self.url = f"{self.endpoint}NHL_{year}_games.html#games"
+                self.filename = f"NHL_{year}_regular_season"
+
+            case 'playoffs':
+                self.url = f"{self.endpoint}NHL_{year}_games.html#games_playoffs"
+                self.filename = f"NHL_{year}_playoff_season"
+
+            case 'teams':
+                self.url = f"{self.endpoint}NHL_{year}.html#stats"
+                self.filename = f"NHL_{year}_team_stats"
 
         # Run raw ingestion of data from source
         output_df = self.file_parser()
@@ -74,54 +80,16 @@ class SnowflakeIngest(object):
         try:
             response = get_legacy_session().get(self.url)
             dataframes = pd.read_html(response.text)
-
-            dataframe = pd.concat(dataframes, axis=0, ignore_index=False)
+            dataframe = pd.concat(dataframes, axis=0, ignore_index=True)
 
             if self.source == 'seasons':
-                dataframe = dataframe.rename(columns=({
-                    'Date': 'date', 'Visitor': 'away_team_id', 'Home': 'home_team_id', 'G': 'away_goals', 'G.1': 'home_goals',
-                    'LOG': 'length_of_game_min'
-                }))
-                dataframe = dataframe[
-                    ['date', 'away_team_id', 'away_goals', 'home_team_id', 'home_goals', 'length_of_game_min']
-                ]
-
-                dataframe['updated_at'] = self.curr_date
-
-                # Transforming data
-                dataframe['length_of_game_min'] = [i.replace(':', '') for i in dataframe['length_of_game_min']]
-                dataframe['length_of_game_min'] = [(int(i[0]) * 60) + int(i[1:]) for i in dataframe['length_of_game_min']]
-
-                dataframe.date = dataframe.date.apply(pd.to_datetime)
-
-            if self.source == 'teams':
-                # Team name cleaning
-                dataframe['Team'] = [str(i).replace('*', '') for i in dataframe['Team']]
-
-                # Creating Column for Total Goals
-
-                dataframe['G'] = dataframe.GF + dataframe.GA
-
-                # Creating Column for Total Power-Play Goals
-
-                dataframe['PPG'] = dataframe.PP + dataframe.PPA
-
-                # Creating Column for Total Games in Shootouts
-
-                dataframe['SHOOTOUTS'] = dataframe.SOW + dataframe.SOL
-
-                def percents(df):
-                    for column, row in df.iteritems():
-                        if '%' in column:
-                            for item in row:
-                                if item < 1:
-                                    row += row * 100
-
-                    return df
-
-                team_stats_df = percents(dataframe)
-
-            # if self.source == 'playoffs'
+                dataframe = transform.seasons(dataframe, self.date)
+                checks = self.snowflake_query_exec(snowflake_checks('regular_season'))
+                logger.info(
+                    f'Destination mappings: {len(checks)}'
+                    '\n'
+                    f'Source mappings: {len(dataframe.columns)}'
+                )
 
             logger.info(
                 f'Retrieved data with columns: {dataframe.columns}'
@@ -174,9 +142,15 @@ class SnowflakeIngest(object):
 
                 # IF THE SNOWFLAKE QUERY RETURNS DATA, STORE IT. ELSE, CONTINUE PROCESS.
                 result = curs.fetchone()
+                df = curs.fetch_pandas_all()
+
                 if result:
                     logger.info(f'Query completed successfully and stored: {query_id}')
                     response[idx] = result[0]
+
+                    if len(df):
+                        return df
+
                 else:
                     pass
 
@@ -199,6 +173,7 @@ if __name__ in "__main__":
 
     parser.add_argument('source')
     parser.add_argument('endpoint')
+    parser.add_argument('year')
     parser.add_argument('s3_bucket_name')
     parser.add_argument('snowflake_conn')
 
@@ -206,19 +181,22 @@ if __name__ in "__main__":
 
     source = args.source if args.source is not None else ""
     endpoint = args.endpoint if args.endpoint is not None else ""
-
+    year = args.year if args.year is not None else ""
     # Example S3 URI : s3://nhl-data-raw/season/regular_season.csv
     s3_bucket_name = args.s3_bucket_name if args.s3_bucket_name is not None else ""
     snowflake_conn = args.snowflake_conn if args.snowflake_conn is not None else ""
 
     # Set up class and ingest data from Raw Source to S3
-    execute = SnowflakeIngest(source, endpoint, s3_bucket_name, snowflake_conn)
+    execute = SnowflakeIngest(source, endpoint, year, s3_bucket_name, snowflake_conn)
 
     # CREATE STAGES
     execute.snowflake_query_exec(snowflake_stages())
 
     # CREATE SCHEMA
     schema = execute.snowflake_query_exec(snowflake_schema())
+
+    # DEDUPE
+    execute.snowflake_query_exec(snowflake_cleanup(year))
 
     # INGEST RAW DATA
     execute.snowflake_query_exec(snowflake_ingestion())

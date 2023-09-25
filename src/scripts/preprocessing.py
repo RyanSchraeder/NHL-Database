@@ -3,91 +3,93 @@
 # Accepts JSON data from S3 files and creates a final dataframe.
 
 import pandas as pd
+import warnings
+from pydantic import BaseModel, validate_call, ValidationError, ConfigDict
+from typing import Optional, List
 from datetime import datetime as dt
+from logger import logger
+
+# LOGGING
+logger = logger('data_transformations')
+
+# Suppress FutureWarning messages
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
-def add_fake_data(
-        data, date, away_teams, home_teams,
+class DataTransform(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    dataframe: pd.DataFrame
+    date: dt
+    away_teams: Optional[List[str]]
+    home_teams: Optional[List[str]]
+    away_goals: Optional[int]
+    home_goals: Optional[int]
+    away_outcome: Optional[int]
+    home_outcome: Optional[int]
+    length_of_game_min: Optional[int]
+
+    @classmethod
+    @validate_call
+    def seasons(cls, dataframe, date):
+
+        dataframe = dataframe.rename(columns=({
+            'Date': 'date', 'Visitor': 'away_team_id', 'Home': 'home_team_id', 'G': 'away_goals', 'G.1': 'home_goals',
+            'LOG': 'length_of_game_min'
+        }))
+        dataframe = dataframe[
+            ['date', 'away_team_id', 'away_goals', 'home_team_id', 'home_goals', 'length_of_game_min']
+        ]
+
+        dataframe['updated_at'] = date
+
+        # Transforming data
+        dataframe['length_of_game_min'] = [i.replace(':', '') for i in dataframe['length_of_game_min']]
+        dataframe['length_of_game_min'] = [(int(i[0]) * 60) + int(i[1:]) for i in dataframe['length_of_game_min']]
+
+        dataframe.date = dataframe.date.apply(pd.to_datetime)
+
+        return dataframe
+
+    @classmethod
+    @validate_call
+    def add_fake_data(
+        cls, dataframe, date, away_teams, home_teams,
         away_goals, home_goals, away_result, home_result,
         game_length
-):
-    """ Add fake data to simulate a matchup and predict its outcome. Only necessary if testing the model out.
-    This same function was used to simulate the Stanley Cup matchup in 2022.
-    """
-    fake_data = pd.DataFrame({
-        'date': date,
-        'away_team': away_teams,
-        'home_team': home_teams,
-        'away_goals': away_goals,
-        'home_goals': home_goals,
-        'away_outcome': away_result,
-        'home_outcome': home_result,
-        'length_of_game_min': game_length
-    })
+    ):
+        """ Add fake data to simulate a matchup and predict its outcome. Only necessary if testing the model out.
+        This same function was used to simulate the Stanley Cup matchup in 2022.
+        """
+        try:
+            fake_data = pd.DataFrame({
+                'date': date,
+                'away_team': away_teams,
+                'home_team': home_teams,
+                'away_goals': away_goals,
+                'home_goals': home_goals,
+                'away_outcome': away_result,
+                'home_outcome': home_result,
+                'length_of_game_min': game_length
+            })
 
-    result = pd.concat([data, fake_data], ignore_index=True)
-    return result
+            result = pd.concat([dataframe, fake_data], ignore_index=True)
+            return result
+        except Exception as e:
+            if e == ValidationError:
+                logger.error(f'Validation of data failed. Context: {e}')
 
+    @classmethod
+    @validate_call
+    def encoding_full(
+        cls, dataframe, date_col: str
+    ):
+        # Encode non-numeric variables
+        dataframe.home_team = dataframe.home_team.astype('category').cat.codes
+        dataframe.away_team = dataframe.away_team.astype('category').cat.codes
 
-dates = ['2022-06-15', '2022-06-18', '2022-06-20', '2022-06-22', '2022-06-24', '2022-06-26']
-dates_list = [dt.strptime(date, '%Y-%m-%d') for date in dates]
+        # Encode date as a day of week to avoid time series implication.
+        dataframe.rename(columns={f'{date_col}': 'day_of_week'}, inplace=True)
+        dataframe['day_of_week'] = dataframe['day_of_week'].dt.dayofweek
 
-away_teams = [
-    'Tampa Bay Lightning',
-    'Tampa Bay Lightning',
-    'Colorado Avalanche',
-    'Colorado Avalanche',
-    'Tampa Bay Lightning',
-    'Colorado Avalanche'
-]
-home_teams = [
-    'Colorado Avalanche',
-    'Colorado Avalanche',
-    'Tampa Bay Lightning',
-    'Tampa Bay Lightning',
-    'Colorado Avalanche',
-    'Tampa Bay Lightning'
-]
-stanley_cup_df = add_fake_data(
-    data=games_df,
-    date=dates_list,
-    away_teams=away_teams,
-    home_teams=home_teams,
-    away_goals=[games_df.groupby('away_team')['away_goals'].mean().loc[i] for i in away_teams],
-    home_goals=[games_df.groupby('home_team')['home_goals'].mean().loc[i] for i in home_teams],
-    away_result=[games_df.groupby('away_team')['away_outcome'].mean().loc[i] for i in away_teams],
-    home_result=[games_df.groupby('home_team')['home_outcome'].mean().loc[i] for i in home_teams],
-    game_length=[games_df['length_of_game_min'].mean() for i in range(6)]
-)
-stanley_cup_df = encoding_game_outcome(stanley_cup_df, 'away_outcome', 'home_outcome', 'away_outcome', 'home_outcome')
-
-# View preview
-stanley_cup_df.tail(6)
-
-def encoding_full(
-        df, home_team: str, away_team: str, date_col: str
-):
-    # Encode non-numeric variables
-    df.home_team = df.home_team.astype('category').cat.codes
-    df.away_team = df.away_team.astype('category').cat.codes
-
-    # Encode date as a day of week to avoid time series implication.
-    df.rename(columns={f'{date_col}': 'day_of_week'}, inplace=True)
-    df['day_of_week'] = df['day_of_week'].dt.dayofweek
-
-    return df
-
-
-classification_df = encoding_full(
-    clean_cup_data, 'home_team', 'away_team', 'date'
-)
-
-classification_df = classification_df[[
-    'day_of_week', 'away_team', 'away_goals', 'home_team', 'home_goals', 'length_of_game_min',
-    'away_outcome', 'home_outcome', 'W', 'L', 'GDIFF', 'SOW%', 'PTS', 'PTS%', 'PP', 'PP%'
-]]
-
-classification_df = classification_df.iloc[:, 0:].astype(int)
-
-# Output dataset with all encoded variables to training set. Will be used for training model.
-classification_df.to_csv(os.path.join(path, "new_encoded_variables.csv"), index=False)
+        return dataframe
