@@ -1,4 +1,4 @@
-FROM python:3.9
+FROM 3.11-alpine3.17
 LABEL repo=NHL-Database
 USER root
 
