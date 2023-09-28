@@ -4,7 +4,7 @@
 
 import pandas as pd
 import warnings
-from pydantic import BaseModel, validate_call, ValidationError, ConfigDict
+from pydantic import BaseModel, ValidationError, ConfigDict
 from typing import Optional, List
 from datetime import datetime as dt
 from logger import logger
@@ -30,7 +30,6 @@ class DataTransform(BaseModel):
     length_of_game_min: Optional[int]
 
     @classmethod
-    @validate_call
     def seasons(cls, dataframe, date):
 
         dataframe = dataframe.rename(columns=({
@@ -52,7 +51,6 @@ class DataTransform(BaseModel):
         return dataframe
 
     @classmethod
-    @validate_call
     def add_fake_data(
         cls, dataframe, date, away_teams, home_teams,
         away_goals, home_goals, away_result, home_result,
@@ -80,7 +78,6 @@ class DataTransform(BaseModel):
                 logger.error(f'Validation of data failed. Context: {e}')
 
     @classmethod
-    @validate_call
     def encoding_full(
         cls, dataframe, date_col: str
     ):
