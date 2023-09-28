@@ -21,7 +21,7 @@ env:
   ECS_CLUSTER: "nhl-data-pipeline"                 # set this to your Amazon ECS cluster name
   ECS_TASK_DEFINITION: "task-definition.json" # set this to the path to your Amazon ECS task definition
                                                # file, e.g. .aws/task-definition.json
-  CONTAINER_NAME: "fargate-app"           # set this to the name of the container in the
+  CONTAINER_NAME: "airflow-data-pipelines"           # set this to the name of the container in the
                                                # containerDefinitions section of your task definition
 
 jobs:

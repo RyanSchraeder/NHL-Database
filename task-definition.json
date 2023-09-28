@@ -1,8 +1,8 @@
 {
-    "taskDefinitionArn": "arn:aws:ecs:us-east-2:656379487547:task-definition/sample-fargate:1",
+    "taskDefinitionArn": "arn:aws:ecs:us-east-2:656379487547:task-definition/airflow-data-pipelines:1",
     "containerDefinitions": [
         {
-            "name": "fargate-app",
+            "name": "airflow-data-pipelines",
             "image": "public.ecr.aws/docker/library/httpd:latest",
             "cpu": 0,
             "portMappings": [
@@ -18,13 +18,14 @@
                 "-c"
             ],
             "command": [
+                ""
             ],
             "environment": [],
             "mountPoints": [],
             "volumesFrom": []
         }
     ],
-    "family": "sample-fargate",
+    "family": "airflow-data-pipelines",
     "networkMode": "awsvpc",
     "revision": 1,
     "volumes": [],
@@ -47,7 +48,7 @@
     ],
     "cpu": "256",
     "memory": "512",
-    "registeredAt": "",
+    "registeredAt": "2023-09-28T21:46:03.808Z",
     "registeredBy": "arn:aws:iam::656379487547:root",
     "tags": []
 }
