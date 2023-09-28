@@ -24,10 +24,10 @@ def get_snowflake_connection(method):
         params = {
             "user": os.getenv('SFUSER'),
             "password": os.getenv('SFPW'),
-            "account": os.getenv('ACCT'),
-            "warehouse": os.getenv('WAREHOUSE'),
-            "database": os.getenv('DB'),
-            "schema": os.getenv('SCHEMA')
+            "account": os.getenv('SNOWFLAKE_ACCT'),
+            "warehouse": os.getenv('SFWH'),
+            "database": os.getenv('SNOWFLAKE_DB'),
+            "schema": os.getenv('SFSCHEMA')
         }
 
         if method == 'standard':
