@@ -11,4 +11,4 @@ RUN  apt-get -yq update && \
 
 COPY requirements.txt requirements.txt
 COPY src/ src/
-RUN pip install -r --no-cache-dir requirements.txt
+RUN pip install -r requirements.txt
