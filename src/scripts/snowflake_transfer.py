@@ -6,12 +6,12 @@ import time
 import sys
 import boto3
 
-from logger import logger
 from connectors import get_snowflake_connection, s3_conn
 from snowflake.connector import ProgrammingError
 from connectors import get_legacy_session
-from snowflake_queries import snowflake_checks
+from snowflake_queries import *
 from preprocessing import DataTransform
+from logger import logger
 
 # Data Source: https://www.hockey-reference.com/leagues/NHL_2022.html ##
 # TODO: S3 connection has been established. Now, the data needs to be moved from S3
@@ -22,11 +22,12 @@ from preprocessing import DataTransform
 #           3) Automate these processes in steps 1 & 2 with MWAA.
 
 
-# LOGGING
-logger = logger('snowflake_transfer')
-
 # Data transformations
 transform = DataTransform
+
+
+# Logger
+logging = logger('snowflake_ingestion')
 
 
 class SnowflakeIngest(object):
@@ -74,24 +75,24 @@ class SnowflakeIngest(object):
 
             if self.source == 'seasons':
 
-                logger.info('Transforming data...')
+                logging.info('Transforming data...')
                 dataframe = transform.seasons(dataframe, self.date)
 
-                logger.info('Checking column mappings...')
+                logging.info('Checking column mappings...')
                 checks = self.snowflake_query_exec(snowflake_checks('regular_season'))
                 len_source, len_dest = len(dataframe.columns), len(checks)
 
-                logger.info(
+                logging.info(
                     f'Destination mappings: {len_dest}'
                     '\n'
                     f'Source mappings: {len_source}'
                 )
 
                 if not len_dest == len_source:
-                    logger.error('Length of source columns does not match number of destination columns.')
+                    logging.error('Length of source columns does not match number of destination columns.')
                     sys.exit(1)
 
-            logger.info(
+            logging.info(
                 f'Retrieved data with columns: {dataframe.columns}'
                 f'\n'
                 f'Preview: \n{dataframe.head(3)}'
@@ -100,7 +101,7 @@ class SnowflakeIngest(object):
             return dataframe
 
         except Exception as e:
-            logger.error(f'An error occurred while retrieving raw data: {e}')
+            logging.error(f'An error occurred while retrieving raw data: {e}')
 
     @s3_conn
     def s3_parser(self, data):
@@ -112,18 +113,18 @@ class SnowflakeIngest(object):
             path = f'../data/{self.filename}.csv'
             data.to_csv(path, index=False)
 
-            logger.info(f'Data stored at {path}')
+            logging.info(f'Data stored at {path}')
 
             # Build the targets
             dst, filename = f'{self.s3_bucket}', f'{self.source}/{self.filename}.csv'
 
             # Retrieve S3 paths & store raw file to s3
-            logger.info(f'Storing parsed data in S3 at {filename}')
+            logging.info(f'Storing parsed data in S3 at {filename}')
             s3_client.upload_file(
                 path, dst, filename
             )
         except Exception as e:
-            logger.error(f'An error occurred when storing data in S3: {e}')
+            logging.error(f'An error occurred when storing data in S3: {e}')
             sys.exit(1)
 
     def snowflake_query_exec(self, queries):
@@ -136,7 +137,7 @@ class SnowflakeIngest(object):
             for idx, query in queries.items():
                 curs.execute_async(query)
                 query_id = curs.sfqid
-                logger.info(f'Query added to queue: {query_id}')
+                logging.info(f'Query added to queue: {query_id}')
 
                 curs.get_results_from_sfqid(query_id)
 
@@ -145,7 +146,7 @@ class SnowflakeIngest(object):
                 df = curs.fetch_pandas_all()
 
                 if result:
-                    logger.info(f'Query completed successfully and stored: {query_id}')
+                    logging.info(f'Query completed successfully and stored: {query_id}')
                     response[idx] = result[0]
 
                     if len(df):
@@ -155,55 +156,55 @@ class SnowflakeIngest(object):
                     pass
 
                 while conn.is_still_running(conn.get_query_status_throw_if_error(query_id)):
-                    logger.info(f'Awaiting query completion for {query_id}')
+                    logging.info(f'Awaiting query completion for {query_id}')
                     time.sleep(1)
 
             return response
 
         except ProgrammingError as err:
-            logger.error(f'Programming Error: {err}')
+            logging.error(f'Programming Error: {err}')
 
 
-# if __name__ in "__main__":
-#     start = time.time()
-#     parser = argparse.ArgumentParser(
-#         prog="SnowflakeIngestion",
-#         description="Move data from raw S3 uploads to a produced Schema in Snowflake"
-#     )
-#
-#     parser.add_argument('source')
-#     parser.add_argument('endpoint')
-#     parser.add_argument('year')
-#     parser.add_argument('s3_bucket_name')
-#     parser.add_argument('snowflake_conn')
-#
-#     args = parser.parse_args()
-#
-#     source = args.source if args.source is not None else ""
-#     endpoint = args.endpoint if args.endpoint is not None else ""
-#     year = args.year if args.year is not None else ""
-#     # Example S3 URI : s3://nhl-data-raw/season/regular_season.csv
-#     s3_bucket_name = args.s3_bucket_name if args.s3_bucket_name is not None else ""
-#     snowflake_conn = args.snowflake_conn if args.snowflake_conn is not None else ""
-#
-#     # Set up class and ingest data from Raw Source to S3
-#     execute = SnowflakeIngest(source, endpoint, year, s3_bucket_name, snowflake_conn)
-#
-#     # CREATE STAGES
-#     execute.snowflake_query_exec(snowflake_stages())
-#
-#     # CREATE SCHEMA
-#     schema = execute.snowflake_query_exec(snowflake_schema())
-#
-#     # INGEST RAW DATA TO S3
-#     output_df = execute.file_parser()
-#     execute.s3_parser(output_df)
-#
-#     # DEDUPE FROM SNOWFLAKE
-#     execute.snowflake_query_exec(snowflake_cleanup(year))
-#
-#     # INGEST RAW DATA TO SNOWFLAKE
-#     execute.snowflake_query_exec(snowflake_ingestion())
-#
-#     end = time.time() - start
-#     logger.info(f'Process Completed. Time elapsed: {end}')
+if __name__ in "__main__":
+    start = time.time()
+    parser = argparse.ArgumentParser(
+        prog="SnowflakeIngestion",
+        description="Move data from raw S3 uploads to a produced Schema in Snowflake"
+    )
+
+    parser.add_argument('source')
+    parser.add_argument('endpoint')
+    parser.add_argument('year')
+    parser.add_argument('s3_bucket_name')
+    parser.add_argument('snowflake_conn')
+
+    args = parser.parse_args()
+
+    source = args.source if args.source is not None else ""
+    endpoint = args.endpoint if args.endpoint is not None else ""
+    year = args.year if args.year is not None else ""
+    # Example S3 URI : s3://nhl-data-raw/season/regular_season.csv
+    s3_bucket_name = args.s3_bucket_name if args.s3_bucket_name is not None else ""
+    snowflake_conn = args.snowflake_conn if args.snowflake_conn is not None else ""
+
+    # Set up class and ingest data from Raw Source to S3
+    execute = SnowflakeIngest(source, endpoint, year, s3_bucket_name, snowflake_conn)
+
+    # CREATE STAGES
+    stage = execute.snowflake_query_exec(snowflake_stages())
+
+    # CREATE SCHEMA
+    schema = execute.snowflake_query_exec(snowflake_schema())
+
+    # INGEST RAW DATA TO S3
+    output_df = execute.file_parser()
+    execute.s3_parser(output_df)
+
+    # DEDUPE FROM SNOWFLAKE
+    execute.snowflake_query_exec(snowflake_cleanup(year))
+
+    # INGEST RAW DATA TO SNOWFLAKE
+    execute.snowflake_query_exec(snowflake_ingestion())
+
+    end = time.time() - start
+    logging.info(f'Process Completed. Time elapsed: {end}')
