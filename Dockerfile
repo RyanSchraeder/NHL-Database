@@ -1,4 +1,4 @@
-FROM 3.11-alpine3.17
+FROM 3.11-bullseye
 LABEL repo=NHL-Database
 USER root
 
