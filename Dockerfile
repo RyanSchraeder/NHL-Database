@@ -1,6 +1,5 @@
 FROM python:3.9
 LABEL repo=NHL-Database
-WORKDIR NHL-Database/
 USER root
 
 RUN  apt-get -yq update && \
