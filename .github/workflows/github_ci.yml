@@ -70,9 +70,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Copy DAGs to S3
-        run: aws cp src/dags/nhl_schedule_dag.py s3://nhl-dag/dags/
+        run: aws s3 cp src/dags/nhl_schedule_dag.py s3://nhl-dag/dags/
       - name: Copy requirements.txt to S3
-        run: aws cp requirements.txt s3://nhl-dag/
+        run: aws s3 cp requirements.txt s3://nhl-dag/
 
   deploy:
     needs: [install, build, upload_dags]
