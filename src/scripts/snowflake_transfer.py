@@ -4,6 +4,7 @@ import argparse
 import datetime as dt
 import time
 import sys
+import os
 import boto3
 
 from connectors import get_snowflake_connection, s3_conn
@@ -110,7 +111,8 @@ class SnowflakeIngest(object):
             s3_client, s3_resource = boto3.client('s3'), boto3.resource('s3')
 
             # Convert DF to CSV File
-            path = f'../data/{self.filename}.csv'
+            path = f'NHL-Database/src/data/{self.filename}.csv'
+            os.path.join(path)
             data.to_csv(path, index=False)
 
             logging.info(f'Data stored at {path}')
@@ -202,6 +204,13 @@ if __name__ in "__main__":
     if env == "development":
         try:
             output_df = execute.file_parser()
+            logging.info(
+                "\n"
+                "\t Process executed successfully in development. "
+                "\t No data was uploaded to S3 or Snowflake. "
+                "\t To try testing out your ingestion completely, use the production branch."
+                "\n"
+            )
         except Exception as e:
             logging.error(
                 f'Test failed while executing in development. Please review: \n'

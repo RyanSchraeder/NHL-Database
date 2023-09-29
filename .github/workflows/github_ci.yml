@@ -12,17 +12,14 @@ name: Deploy to Amazon ECS
 on:
   push:
     branches:
-      - main
+      - development
 
 env:
   AWS_REGION: "us-east-1"                   # set this to your preferred AWS region, e.g. us-west-1
   ECR_REPOSITORY: "projects_ecr_repo"           # set this to your Amazon ECR repository name
   ECS_SERVICE: "nhl-data-pipeline"                 # set this to your Amazon ECS service name
   ECS_CLUSTER: "nhl-data-pipeline"                 # set this to your Amazon ECS cluster name
-  ECS_TASK_DEFINITION: "task-definition.json" # set this to the path to your Amazon ECS task definition
-                                               # file, e.g. .aws/task-definition.json
-  CONTAINER_NAME: "airflow-data-pipelines"           # set this to the name of the container in the
-                                               # containerDefinitions section of your task definition
+  CONTAINER_NAME: "airflow-data-pipelines"
 
 jobs:
   install:
@@ -51,6 +48,8 @@ jobs:
     steps:
       - name: Checkout branch
         uses: actions/checkout@v1
+      - name: Install requirements.txt
+        run: pip install -r requirements.txt
       - name: Set environment variables
         run: |
           echo "SFUSER=${{ secrets.SFUSER }}" >> "$GITHUB_ENV"
@@ -59,33 +58,43 @@ jobs:
           echo "SFWH=${{ secrets.SFWH }}" >> "$GITHUB_ENV"
           echo "SNOWFLAKE_DB=${{ secrets.SNOWFLAKE_DB }}" >> "$GITHUB_ENV"
           echo "SFSCHEMA=${{ secrets.SFSCHEMA }}" >> "$GITHUB_ENV"
-      - name: Install requirements.txt
-        run: pip install -r requirements.txt
       - name: Run core logic
         run: python3 src/scripts/snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/ 2023 nhl-data-raw standard production
 
   upload_dags:
-    needs: [install, build]
-    name: Upload DAGs to S3 and Redeploy MWAA
+#    needs: [install, build]
+    name: Upload DAGs to S3
     runs-on: ubuntu-latest
     steps:
-      - name: Copy DAGs to S3
-        run: aws s3 cp src/dags/nhl_schedule_dag.py s3://nhl-dag/dags/
+      - name: Checkout branch
+        uses: actions/checkout@v1
       - name: Copy requirements.txt to S3
-        run: aws s3 cp requirements.txt s3://nhl-dag/
+        run: |
+          aws s3 cp requirements.txt s3://nhl-dag/
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
+      - name: Copy DAGs to S3
+        run: | 
+          aws s3 cp dags/nhl_schedule_dag.py s3://nhl-dag/dags/
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
 
   deploy:
     needs: [install, build, upload_dags]
     name: Deploy
     runs-on: ubuntu-latest
-    environment: production
+    environment: development
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@0e613a0980cbf65ed5b322eb7a1e075d28913a83
+        uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -93,33 +102,18 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@62f4f872db3836360b72999f4b87f1ff13310f3a
+        uses: aws-actions/amazon-ecr-login@v1
 
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
+          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
+          IMAGE_TAG: latest
         run: |
           # Build a docker container and
           # push it to ECR so that it can
           # be deployed to ECS.
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
-
-      - name: Fill in the new image ID in the Amazon ECS task definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@c804dfbdd57f713b6c079302a4c01db7017a36fc
-        with:
-          task-definition: ${{ env.ECS_TASK_DEFINITION }}
-          container-name: ${{ env.CONTAINER_NAME }}
-          image: ${{ steps.build-image.outputs.image }}
-
-      - name: Deploy Amazon ECS task definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@df9643053eda01f169e64a0e60233aacca83799a
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ env.ECS_SERVICE }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" 
