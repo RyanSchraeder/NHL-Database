@@ -82,6 +82,10 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
+      - name: Redeploy MWAA
+        run: |
+          requirements_version=$(aws s3api list-object-versions --bucket nhl-dag --prefix requirements.txt --query 'Versions[?IsLatest].[VersionId]' --output text)
+          aws mwaa update-environment --name nhl-pipeline-airflow-env --requirements-s3-path nhl-dag/requirements.txt --requirements-s3-object-version $requirements_version --region us-east-1
 
   deploy:
     needs: [install, build, upload_dags]
