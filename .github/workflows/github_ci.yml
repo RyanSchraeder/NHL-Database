@@ -25,6 +25,34 @@ env:
                                                # containerDefinitions section of your task definition
 
 jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout branch
+        uses: actions/checkout@v1
+      - name: Set up Python 3.9
+        uses: actions/setup-python
+        with:
+          python-version: '3.9'
+      - run: python src/scripts/snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/ 2023 nhl-data-raw
+
+  upload_dags:
+    name: Upload DAGs to S3 and Redeploy MWAA
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install AWS CLI
+        id: install-aws-cli
+        uses: unfor19/install-aws-cli-action@v1
+        with:
+          version: 2     # default
+          verbose: false # default
+        run: aws --version
+      - name: Copy DAGs to S3
+        run: aws cp src/dags/nhl_schedule_dag.py s3://nhl-dag/dags/
+      - name: Copy requirements.txt to S3
+        run: aws cp requirements.txt s3://nhl-dag/
+
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
