@@ -48,16 +48,16 @@ jobs:
         run: python -c "import sys; print(sys.version)"
       - name: Display AWS CLI version
         run: aws --version
-      - name: Install requirements.txt
-        run: pip install -r requirements.txt
 
   build:
     needs: install
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - name: checkout branch
+      - name: Checkout branch
         uses: actions/checkout@v1
+      - name: Install requirements.txt
+        run: pip install -r requirements.txt
       - name: Run core logic
         run: python3 src/scripts/snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/ 2023 nhl-data-raw
 
