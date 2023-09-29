@@ -69,10 +69,13 @@ jobs:
     name: Upload DAGs to S3 and Redeploy MWAA
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout branch
+        uses: actions/checkout@v1
       - name: Copy requirements.txt to S3
         run: |
           echo "Directory: $(pwd)"
-          aws s3 cp /home/runner/work/NHL-Database/NHL-Database/requirements.txt s3://nhl-dag/
+          echo "Files: $(ls -la)"
+          aws s3 cp requirements.txt s3://nhl-dag/
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
