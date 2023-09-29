@@ -72,7 +72,7 @@ jobs:
       - name: Copy requirements.txt to S3
         run: |
           echo "Directory: $(pwd)"
-          aws s3 cp ~/requirements.txt s3://nhl-dag/
+          aws s3 cp /home/runner/work/NHL-Database/NHL-Database/requirements.txt s3://nhl-dag/
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
