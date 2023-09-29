@@ -25,17 +25,31 @@ env:
                                                # containerDefinitions section of your task definition
 
 jobs:
+  install:
+    runs-on: ubuntu-latest
+    strategy:
+      # You can use PyPy versions in python-version.
+      # For example, pypy2.7 and pypy3.9
+      matrix:
+        python-version: [ "3.7", "3.8", "3.9", "3.10", "3.11" ]
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Display Python version
+        run: python -c "import sys; print(sys.version)"
+
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
       - name: checkout branch
         uses: actions/checkout@v1
-      - name: Set up Python 3.9
-        uses: actions/setup-python
-        with:
-          python-version: '3.9'
-      - run: python src/scripts/snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/ 2023 nhl-data-raw
+      - name: Run core logic
+        run: python src/scripts/snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/ 2023 nhl-data-raw
 
   upload_dags:
     name: Upload DAGs to S3 and Redeploy MWAA
@@ -43,7 +57,7 @@ jobs:
     steps:
       - name: Install AWS CLI
         id: install-aws-cli
-        uses: unfor19/install-aws-cli-action@v1
+        uses: unfor19/install-aws-cli-action@master
         with:
           version: 2     # default
           verbose: false # default
