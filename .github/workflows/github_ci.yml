@@ -65,14 +65,14 @@ jobs:
         run: python3 src/scripts/snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/ 2023 nhl-data-raw standard development
 
   upload_dags:
-    needs: [install, build]
+#    needs: [install, build]
     name: Upload DAGs to S3 and Redeploy MWAA
     runs-on: ubuntu-latest
     steps:
       - name: Copy requirements.txt to S3
         run: |
           echo "Directory: $(pwd)"
-          aws s3 cp NHL-Database/requirements.txt s3://nhl-dag/
+          aws s3 cp ~/requirements.txt s3://nhl-dag/
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
