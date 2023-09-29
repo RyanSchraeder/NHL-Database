@@ -112,7 +112,6 @@ class SnowflakeIngest(object):
 
             # Convert DF to CSV File
             path = f'../data/{self.filename}.csv'
-            os.path.join(path)
             data.to_csv(path, index=False)
 
             logging.info(f'Data stored at {path}')
