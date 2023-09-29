@@ -43,14 +43,6 @@ jobs:
         run: python -c "import sys; print(sys.version)"
       - name: Display AWS CLI version
         run: aws --version
-
-  build:
-    needs: install
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout branch
-        uses: actions/checkout@v1
       - name: Set environment variables
         run: |
           echo "SFUSER=${{ secrets.SFUSER }}" >> "$GITHUB_ENV"
@@ -59,6 +51,14 @@ jobs:
           echo "SFWH=${{ secrets.SFWH }}" >> "$GITHUB_ENV"
           echo "SNOWFLAKE_DB=${{ secrets.SNOWFLAKE_DB }}" >> "$GITHUB_ENV"
           echo "SFSCHEMA=${{ secrets.SFSCHEMA }}" >> "$GITHUB_ENV"
+
+  build:
+    needs: install
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v1
       - name: Install requirements.txt
         run: pip install -r requirements.txt
       - name: Run core logic
@@ -71,9 +71,16 @@ jobs:
     steps:
       - name: Copy requirements.txt to S3
         run: aws s3 cp NHL-Database/requirements.txt s3://nhl-dag/
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
       - name: Copy DAGs to S3
         run: aws s3 cp NHL-Database/dags/nhl_schedule_dag.py s3://nhl-dag/dags/
-
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
 
   deploy:
     needs: [install, build, upload_dags]
