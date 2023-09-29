@@ -1,5 +1,6 @@
 {
     "taskDefinitionArn": "arn:aws:ecs:us-east-2:656379487547:task-definition/airflow-data-pipelines:1",
+    "executionRoleArn": "arn:aws:iam::656379487547:role/AirflowECSTaskExecution",
     "containerDefinitions": [
         {
             "name": "airflow-data-pipelines",
