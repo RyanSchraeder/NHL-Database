@@ -59,7 +59,7 @@ jobs:
       - name: Install requirements.txt
         run: pip install -r requirements.txt
       - name: Run core logic
-        run: python3 src/scripts/snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/ 2023 nhl-data-raw
+        run: python3 src/scripts/snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/ 2023 nhl-data-raw standard
 
   upload_dags:
     needs: [install, build]
