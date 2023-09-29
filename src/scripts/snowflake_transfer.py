@@ -111,7 +111,7 @@ class SnowflakeIngest(object):
             s3_client, s3_resource = boto3.client('s3'), boto3.resource('s3')
 
             # Convert DF to CSV File
-            path = f'NHL-Database/src/data/{self.filename}.csv'
+            path = f'../data/{self.filename}.csv'
             os.path.join(path)
             data.to_csv(path, index=False)
 
