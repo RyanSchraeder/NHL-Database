@@ -70,7 +70,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Copy requirements.txt to S3
-        run: aws s3 cp requirements.txt s3://nhl-dag/
+        run: aws s3 cp NHL-Database/requirements.txt s3://nhl-dag/
       - name: Copy DAGs to S3
         run: aws s3 cp NHL-Database/dags/nhl_schedule_dag.py s3://nhl-dag/dags/
 
