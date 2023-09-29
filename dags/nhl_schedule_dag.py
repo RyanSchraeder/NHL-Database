@@ -16,6 +16,14 @@ cluster = 'nhl-data-pipeline'
 task_definition = 'airflow-data-pipelines:5'
 container_name = 'airflow-data-pipelines'
 
+# Script variables
+source = 'seasons'
+endpoint = 'https://www.hockey-reference.com/leagues/'
+year = datetime.year
+s3_bucket_name = 'nhl-data-raw'
+snowflake_conn = 'standard'
+env = 'production'
+
 
 with DAG(
     'nhl_season_schedule_dag',
@@ -39,7 +47,7 @@ with DAG(
                 {
                     "name": f"{container_name}",
                     "command": [
-                        f"python3 src/scripts/snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/ 2023 nhl-data-raw standard production"]
+                        f"python3 src/scripts/snowflake_transfer.py {source} {endpoint} {year} {s3_bucket_name} {snowflake_conn} {env}"]
                 }
             ],
         },
