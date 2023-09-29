@@ -202,6 +202,13 @@ if __name__ in "__main__":
     if env == "development":
         try:
             output_df = execute.file_parser()
+            logging.info(
+                "\n"
+                "\t Process executed successfully in development. "
+                "\t No data was uploaded to S3 or Snowflake. "
+                "\t To try testing out your ingestion completely, use the production branch."
+                "\n"
+            )
         except Exception as e:
             logging.error(
                 f'Test failed while executing in development. Please review: \n'
