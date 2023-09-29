@@ -1,10 +1,8 @@
 {
-    "taskDefinitionArn": "arn:aws:ecs:us-east-2:656379487547:task-definition/airflow-data-pipelines:1",
-    "executionRoleArn": "arn:aws:iam::656379487547:role/AirflowECSTaskExecution",
     "containerDefinitions": [
         {
             "name": "airflow-data-pipelines",
-            "image": "public.ecr.aws/docker/library/httpd:latest",
+            "image": "656379487547.dkr.ecr.us-east-1.amazonaws.com/projects_ecr_repo:latest",
             "cpu": 0,
             "portMappings": [
                 {
@@ -19,7 +17,7 @@
                 "-c"
             ],
             "command": [
-                ""
+                "python3 src/scripts/snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/ 2023 nhl-data-raw standard development"
             ],
             "environment": [],
             "mountPoints": [],
@@ -27,11 +25,18 @@
         }
     ],
     "family": "airflow-data-pipelines",
+    "executionRoleArn": "arn:aws:iam::656379487547:role/AirflowECSTaskExecution",
     "networkMode": "awsvpc",
-    "revision": 1,
+    "revision": 7,
     "volumes": [],
     "status": "ACTIVE",
     "requiresAttributes": [
+        {
+            "name": "com.amazonaws.ecs.capability.ecr-auth"
+        },
+        {
+            "name": "ecs.capability.execution-role-ecr-pull"
+        },
         {
             "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
         },
@@ -49,7 +54,7 @@
     ],
     "cpu": "256",
     "memory": "512",
-    "registeredAt": "2023-09-28T21:46:03.808Z",
-    "registeredBy": "arn:aws:iam::656379487547:root",
+    "registeredAt": "2023-09-29T20:59:42.738Z",
+    "registeredBy": "arn:aws:iam::656379487547:user/stanleycuppreds",
     "tags": []
 }
