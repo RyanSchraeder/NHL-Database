@@ -69,10 +69,11 @@ jobs:
     name: Upload DAGs to S3 and Redeploy MWAA
     runs-on: ubuntu-latest
     steps:
-      - name: Copy DAGs to S3
-        run: aws s3 cp src/dags/nhl_schedule_dag.py s3://nhl-dag/dags/
       - name: Copy requirements.txt to S3
         run: aws s3 cp requirements.txt s3://nhl-dag/
+      - name: Copy DAGs to S3
+        run: aws s3 cp NHL-Database/dags/nhl_schedule_dag.py s3://nhl-dag/dags/
+
 
   deploy:
     needs: [install, build, upload_dags]
