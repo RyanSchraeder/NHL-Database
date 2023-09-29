@@ -34,13 +34,20 @@ jobs:
         python-version: [ "3.7", "3.8", "3.9", "3.10", "3.11" ]
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Install AWS CLI
+        id: install-aws-cli
+        uses: unfor19/install-aws-cli-action@master
+        with:
+          version: 2     # default
+          verbose: false # default
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
+      - name: Display AWS CLI version
+        run: aws --version
 
   build:
     name: Build
@@ -55,13 +62,6 @@ jobs:
     name: Upload DAGs to S3 and Redeploy MWAA
     runs-on: ubuntu-latest
     steps:
-      - name: Install AWS CLI
-        id: install-aws-cli
-        uses: unfor19/install-aws-cli-action@master
-        with:
-          version: 2     # default
-          verbose: false # default
-        run: aws --version
       - name: Copy DAGs to S3
         run: aws cp src/dags/nhl_schedule_dag.py s3://nhl-dag/dags/
       - name: Copy requirements.txt to S3
