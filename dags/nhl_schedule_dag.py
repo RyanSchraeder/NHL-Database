@@ -22,7 +22,7 @@ endpoint = 'https://www.hockey-reference.com/leagues/'
 year = datetime.year
 s3_bucket_name = 'nhl-data-raw'
 snowflake_conn = 'standard'
-env = 'production'
+env = 'development'
 
 
 with DAG(
@@ -47,7 +47,8 @@ with DAG(
                 {
                     "name": f"{container_name}",
                     "command": [
-                        f"python3 src/scripts/snowflake_transfer.py {source} {endpoint} {year} {s3_bucket_name} {snowflake_conn} {env}"]
+                        f"python3 src/scripts/snowflake_transfer.py {source} {endpoint} {year} {s3_bucket_name} {snowflake_conn} {env}"
+                    ]
                 }
             ],
         },
