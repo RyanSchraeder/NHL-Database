@@ -43,14 +43,6 @@ jobs:
         run: python -c "import sys; print(sys.version)"
       - name: Display AWS CLI version
         run: aws --version
-      - name: Set environment variables
-        run: |
-          echo "SFUSER=${{ secrets.SFUSER }}" >> "$GITHUB_ENV"
-          echo "SFPW=${{ secrets.SFPW }}" >> "$GITHUB_ENV"
-          echo "SNOWFLAKE_ACCT=${{ secrets.SNOWFLAKE_ACCT }}" >> "$GITHUB_ENV"
-          echo "SFWH=${{ secrets.SFWH }}" >> "$GITHUB_ENV"
-          echo "SNOWFLAKE_DB=${{ secrets.SNOWFLAKE_DB }}" >> "$GITHUB_ENV"
-          echo "SFSCHEMA=${{ secrets.SFSCHEMA }}" >> "$GITHUB_ENV"
 
   build:
     needs: install
@@ -61,6 +53,14 @@ jobs:
         uses: actions/checkout@v1
       - name: Install requirements.txt
         run: pip install -r requirements.txt
+      - name: Set environment variables
+        run: |
+          echo "SFUSER=${{ secrets.SFUSER }}" >> "$GITHUB_ENV"
+          echo "SFPW=${{ secrets.SFPW }}" >> "$GITHUB_ENV"
+          echo "SNOWFLAKE_ACCT=${{ secrets.SNOWFLAKE_ACCT }}" >> "$GITHUB_ENV"
+          echo "SFWH=${{ secrets.SFWH }}" >> "$GITHUB_ENV"
+          echo "SNOWFLAKE_DB=${{ secrets.SNOWFLAKE_DB }}" >> "$GITHUB_ENV"
+          echo "SFSCHEMA=${{ secrets.SFSCHEMA }}" >> "$GITHUB_ENV"
       - name: Run core logic
         run: python3 src/scripts/snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/ 2023 nhl-data-raw standard development
 
@@ -70,13 +70,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Copy requirements.txt to S3
-        run: aws s3 cp NHL-Database/requirements.txt s3://nhl-dag/
+        run: |
+          echo "Directory: $(pwd)"
+          aws s3 cp NHL-Database/requirements.txt s3://nhl-dag/
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
       - name: Copy DAGs to S3
-        run: aws s3 cp NHL-Database/dags/nhl_schedule_dag.py s3://nhl-dag/dags/
+        run: | 
+          echo "Directory: $(pwd)"
+          aws s3 cp NHL-Database/dags/nhl_schedule_dag.py s3://nhl-dag/dags/
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
