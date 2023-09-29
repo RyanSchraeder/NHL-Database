@@ -27,12 +27,6 @@ env:
 jobs:
   install:
     runs-on: ubuntu-latest
-    strategy:
-      # You can use PyPy versions in python-version.
-      # For example, pypy2.7 and pypy3.9
-      matrix:
-        python-version: "3.9"
-
     steps:
       - name: Install AWS CLI
         id: install-aws-cli
@@ -40,10 +34,10 @@ jobs:
         with:
           version: 2     # default
           verbose: false # default
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python 3.9
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.9"
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
       - name: Display AWS CLI version
