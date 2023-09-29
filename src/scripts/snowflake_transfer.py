@@ -177,6 +177,7 @@ if __name__ in "__main__":
     parser.add_argument('year')
     parser.add_argument('s3_bucket_name')
     parser.add_argument('snowflake_conn')
+    parser.add_argument('env')
 
     args = parser.parse_args()
 
@@ -186,6 +187,7 @@ if __name__ in "__main__":
     # Example S3 URI : s3://nhl-data-raw/season/regular_season.csv
     s3_bucket_name = args.s3_bucket_name if args.s3_bucket_name is not None else ""
     snowflake_conn = args.snowflake_conn if args.snowflake_conn is not None else ""
+    env = args.env if args.env is not None else "development"
 
     # Set up class and ingest data from Raw Source to S3
     execute = SnowflakeIngest(source, endpoint, year, s3_bucket_name, snowflake_conn)
@@ -196,15 +198,25 @@ if __name__ in "__main__":
     # CREATE SCHEMA
     schema = execute.snowflake_query_exec(snowflake_schema())
 
-    # INGEST RAW DATA TO S3
-    output_df = execute.file_parser()
-    execute.s3_parser(output_df)
+    # Only store data in S3 in Production
+    if env == "development":
+        try:
+            output_df = execute.file_parser()
+        except Exception as e:
+            logging.error(
+                f'Test failed while executing in development. Please review: \n'
+                f'\t\t{e}'
+            )
+    else:
+        # INGEST RAW DATA TO S3
+        output_df = execute.file_parser()
+        execute.s3_parser(output_df)
 
-    # DEDUPE FROM SNOWFLAKE
-    execute.snowflake_query_exec(snowflake_cleanup(year))
+        # DEDUPE FROM SNOWFLAKE
+        execute.snowflake_query_exec(snowflake_cleanup(year))
 
-    # INGEST RAW DATA TO SNOWFLAKE
-    execute.snowflake_query_exec(snowflake_ingestion())
+        # INGEST RAW DATA TO SNOWFLAKE
+        execute.snowflake_query_exec(snowflake_ingestion())
 
     end = time.time() - start
     logging.info(f'Process Completed. Time elapsed: {end}')
