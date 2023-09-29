@@ -22,7 +22,7 @@ endpoint = 'https://www.hockey-reference.com/leagues/'
 year = datetime.year
 s3_bucket_name = 'nhl-data-raw'
 snowflake_conn = 'standard'
-env = 'development'
+env = 'production'
 
 
 with DAG(

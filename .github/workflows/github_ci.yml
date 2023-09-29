@@ -12,7 +12,7 @@ name: Deploy to Amazon ECS
 on:
   push:
     branches:
-      - development
+      - main
 
 env:
   AWS_REGION: "us-east-1"                   # set this to your preferred AWS region, e.g. us-west-1
@@ -87,7 +87,7 @@ jobs:
     needs: [install, build, upload_dags]
     name: Deploy
     runs-on: ubuntu-latest
-    environment: development
+    environment: production
 
     steps:
       - name: Checkout
