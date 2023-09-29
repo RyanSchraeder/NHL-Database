@@ -50,15 +50,17 @@ jobs:
         run: aws --version
 
   build:
+    needs: install
     name: Build
     runs-on: ubuntu-latest
     steps:
       - name: checkout branch
         uses: actions/checkout@v1
       - name: Run core logic
-        run: python src/scripts/snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/ 2023 nhl-data-raw
+        run: python3 src/scripts/snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/ 2023 nhl-data-raw
 
   upload_dags:
+    needs: [install, build]
     name: Upload DAGs to S3 and Redeploy MWAA
     runs-on: ubuntu-latest
     steps:
@@ -68,6 +70,7 @@ jobs:
         run: aws cp requirements.txt s3://nhl-dag/
 
   deploy:
+    needs: [install, build, upload_dags]
     name: Deploy
     runs-on: ubuntu-latest
     environment: production
