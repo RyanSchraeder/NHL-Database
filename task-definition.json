@@ -1,10 +1,9 @@
 {
-    "taskDefinitionArn": "arn:aws:ecs:us-east-2:656379487547:task-definition/airflow-data-pipelines:1",
     "executionRoleArn": "arn:aws:iam::656379487547:role/AirflowECSTaskExecution",
     "containerDefinitions": [
         {
             "name": "airflow-data-pipelines",
-            "image": "public.ecr.aws/docker/library/httpd:latest",
+            "image": "656379487547.dkr.ecr.us-east-1.amazonaws.com/projects_ecr_repo:latest",
             "cpu": 0,
             "portMappings": [
                 {
@@ -19,7 +18,7 @@
                 "-c"
             ],
             "command": [
-                ""
+                "python3 src/scripts/snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/   nhl-data-raw standard  "
             ],
             "environment": [],
             "mountPoints": [],
