@@ -19,6 +19,7 @@ env:
   ECR_REPOSITORY: "projects_ecr_repo"           # set this to your Amazon ECR repository name
   ECS_SERVICE: "nhl-data-pipeline"                 # set this to your Amazon ECS service name
   ECS_CLUSTER: "nhl-data-pipeline"                 # set this to your Amazon ECS cluster name
+  ECS_TASK_DEFINITION: "task-definition.json"
   CONTAINER_NAME: "airflow-data-pipelines"
 
 jobs:
