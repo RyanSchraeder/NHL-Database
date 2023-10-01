@@ -32,7 +32,7 @@ with DAG(
         'retries': 1,
         'retry_delay': timedelta(minutes=5)
     },
-    description="ADS 00725 STB ADS DAG. Schedule: 4:30PM MST Everyday after Scope STB Tuner Platform OPS builds.",
+    description="NHL Database ETL Job",
     schedule_interval='30 16 * * *',
     start_date=datetime.now(),
     catchup=False
