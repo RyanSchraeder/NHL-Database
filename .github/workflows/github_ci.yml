@@ -20,7 +20,7 @@ env:
   ECS_SERVICE: "nhl-data-pipeline"                 # set this to your Amazon ECS service name
   ECS_CLUSTER: "nhl-data-pipeline"                 # set this to your Amazon ECS cluster name
   CONTAINER_NAME: "airflow-data-pipelines"
-
+  ECS_TASK_DEFINITION: "airflow-data-pipelines"
 jobs:
   install:
     name: Install CI/CD Dependencies
