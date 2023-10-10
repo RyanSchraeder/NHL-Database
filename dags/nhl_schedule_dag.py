@@ -39,6 +39,8 @@ with DAG(
 ) as dag:
     nhl_seasons = ECSOperator(
         task_id="nhl_seasons",
+        dag=dag,
+        aws_conn_id="aws_ecs",
         cluster=f"{cluster}",
         task_definition=f"{task_definition}",
         launch_type="FARGATE",
@@ -48,10 +50,19 @@ with DAG(
                     "name": f"{container_name}",
                     "command": [
                         f"python3 src/scripts/snowflake_transfer.py {source} {endpoint} {year} {s3_bucket_name} {snowflake_conn} {env}"
-                    ]
+                    ],
+                    "environment": [{
+                        "name": "string", "value": "string"
+                    }]
                 }
             ],
         },
-        network_configuration={'awsvpcConfiguration': {'assignPublicIp': 'ENABLED', 'subnets': [f'{subnet}']}},
+        network_configuration={
+            'awsvpcConfiguration': {
+                'assignPublicIp': 'DISABLED',
+                'subnets': [f'{subnet}']
+            }
+        },
+        tags={"owner": "rschraeder"},
         awslogs_group=f"{logs_group}"
     )
