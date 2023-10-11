@@ -13,7 +13,7 @@ local_tz = pendulum.timezone('America/Denver')
 subnet = 'subnet-086f7f66dfd373f93'
 logs_group = 'airflow-nhl-pipeline-airflow-env-Task'
 cluster = 'nhl-data-pipeline'
-task_definition = 'airflow-data-pipelines:5'
+task_definition = 'airflow-data-pipelines:11'
 container_name = 'airflow-data-pipelines'
 
 # Script variables
