@@ -20,7 +20,8 @@ env:
   ECS_SERVICE: "nhl-data-pipeline"                 # set this to your Amazon ECS service name
   ECS_CLUSTER: "nhl-data-pipeline"                 # set this to your Amazon ECS cluster name
   CONTAINER_NAME: "airflow-data-pipelines"
-  ECS_TASK_DEFINITION: "airflow-data-pipelines"
+  ECS_TASK_DEFINITION: "task-definition.json"
+
 jobs:
   install:
     name: Install CI/CD Dependencies
@@ -122,9 +123,9 @@ jobs:
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: ${{ env.ECS_TASK_DEFINITION }} >> "$GITHUB_ENV"
-          container-name: ${{ env.CONTAINER_NAME }} >> "$GITHUB_ENV"
-          image: ${{ steps.build-image.outputs.image }} >> "$GITHUB_ENV"
+          task-definition: ${{ env.ECS_TASK_DEFINITION }}
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
 
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
