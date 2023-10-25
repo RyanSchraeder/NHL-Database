@@ -17,10 +17,11 @@ on:
 env:
   AWS_REGION: "us-east-1"                   # set this to your preferred AWS region, e.g. us-west-1
   ECR_REPOSITORY: "projects_ecr_repo"           # set this to your Amazon ECR repository name
-  ECS_SERVICE: "nhl-data-pipeline"                 # set this to your Amazon ECS service name
-  ECS_CLUSTER: "nhl-data-pipeline"                 # set this to your Amazon ECS cluster name
-  CONTAINER_NAME: "airflow-data-pipelines"
+  ECS_SERVICE: "nhl-database-service"                 # set this to your Amazon ECS service name
+  ECS_CLUSTER: "nhl-database-cluster"                 # set this to your Amazon ECS cluster name
+  CONTAINER_NAME: "mage-data-pipelines"
   ECS_TASK_DEFINITION: "task-definition.json"
+  IMAGE_TAG: "latest"
 
 jobs:
   install:
@@ -41,6 +42,8 @@ jobs:
         run: python -c "import sys; print(sys.version)"
       - name: Display AWS CLI version
         run: aws --version
+      - name: Setup Terraform
+        run: git clone https://github.com/mage-ai/mage-ai-terraform-templates.git
 
   build:
     needs: install
@@ -61,28 +64,6 @@ jobs:
           echo "SFSCHEMA=${{ secrets.SFSCHEMA }}" >> "$GITHUB_ENV"
       - name: Run core logic
         run: python3 src/scripts/snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/ 2023 nhl-data-raw standard development
-
-  upload_dags:
-#    needs: [install, build]
-    name: Upload DAGs to S3
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout branch
-        uses: actions/checkout@v1
-      - name: Copy requirements.txt to S3
-        run: |
-          aws s3 cp requirements.txt s3://nhl-dag/
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
-      - name: Copy DAGs to S3
-        run: | 
-          aws s3 cp dags/nhl_schedule_dag.py s3://nhl-dag/dags/
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: ${{ env.AWS_REGION }}
 
   deploy:
     needs: [install, build, upload_dags]
@@ -105,7 +86,7 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build, tag, and push image to Amazon ECR
+      - name: Build, tag, test, and push image to Amazon ECR
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -115,9 +96,15 @@ jobs:
           # Build a docker container and
           # push it to ECR so that it can
           # be deployed to ECS.
+          docker pull hashicorp/terraform:latest
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> "$GITHUB_ENV"
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ env.ECS_TASK_DEFINITION }} \
+            --query taskDefinition > task-definition.json
 
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
@@ -125,7 +112,7 @@ jobs:
         with:
           task-definition: ${{ env.ECS_TASK_DEFINITION }}
           container-name: ${{ env.CONTAINER_NAME }}
-          image: 656379487547.dkr.ecr.us-east-1.amazonaws.com/projects_ecr_repo:latest
+          image: ${{ steps.build-image.outputs.image }}
 
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
