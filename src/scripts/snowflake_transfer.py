@@ -181,22 +181,48 @@ def s3_parser(filename: str, data: pd.DataFrame, s3_bucket_name: str = 'nhl-data
         logging.error(f'An error occurred when storing data in S3: {e}')
         sys.exit(1)
 
+@task(name="snowflake_base_model")
+def snowflake_base_model(snowflake_conn):
+    logging = get_run_logger()
+
+    # Create stages
+    logging.info("Updating snowflake stages if needed")
+    snowflake_query_exec(snowflake_stages(), method=snowflake_conn)
+
+    # Create Schemas
+    logging.info("Updating table schemas if needed")
+    snowflake_query_exec(snowflake_schema(), method=snowflake_conn)
+
+    return
+
+
+@task(name="snowflake_load")
+def snowflake_load(year, snowflake_conn):
+    logging = get_run_logger()
+
+    # DEDUPE FROM SNOWFLAKE
+    logging.info(f"Deduplicating yearly record data to refresh the schedule")
+    snowflake_query_exec(snowflake_cleanup(year), method=snowflake_conn)
+
+    # INGEST RAW DATA TO SNOWFLAKE
+    logging.info(f"Updating yearly record data")
+    snowflake_query_exec(snowflake_ingestion(), method=snowflake_conn)
+
+    return
 
 @flow(retries=1, retry_delay_seconds=5, log_prints=True)
 def nhl_snowflake_ingest(source, endpoint, year, s3_bucket_name, snowflake_conn, env):
     url, filename = setup(source, endpoint, year)
     logging = get_run_logger()
 
-    # Create stages
-    snowflake_query_exec(snowflake_stages(), method=snowflake_conn)
-
-    # Create Schemas
-    snowflake_query_exec(snowflake_schema(), method=snowflake_conn)
+    # Prepare snowflake stages and schemas
+    snowflake_base_model(snowflake_conn)
 
     # Parse Files from Raw Endpoint
     # Only store data in S3 in Production
     if env == "development":
         try:
+            logging.info("Extracting raw data from source, formatting and transformation, and loading it to S3")
             file_parser(source, url, snowflake_conn, year)
             logging.info(
                 "\n"
@@ -212,14 +238,13 @@ def nhl_snowflake_ingest(source, endpoint, year, s3_bucket_name, snowflake_conn,
             )
     else:
         # INGEST RAW DATA TO S3
+        logging.info("Extracting raw data from source, formatting and transformation, and loading it to S3")
         output_df = file_parser(source, url, snowflake_conn, year)
         s3_parser(filename=filename, data=output_df, s3_bucket_name=s3_bucket_name)
 
-        # DEDUPE FROM SNOWFLAKE
-        snowflake_query_exec(snowflake_cleanup(year), method=snowflake_conn)
-
-        # INGEST RAW DATA TO SNOWFLAKE
-        snowflake_query_exec(snowflake_ingestion(), method=snowflake_conn)
+        # MINOR TRANSFORMATION & TRANSFER RAW DATA TO SNOWFLAKE
+        # logging.info("Extracting raw data from S3 to transferred into Snowflake")
+        snowflake_load(year, snowflake_conn)
 
     end = time.time() - start
     logging.info(f'Process Completed. Time elapsed: {end}')
