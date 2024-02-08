@@ -4,7 +4,6 @@ import botocore.exceptions
 import requests
 import urllib3
 import ssl
-from logger import logger
 # from secrets_access import get_secret
 import snowflake.connector
 # from snowflake.snowpark import Session
@@ -13,9 +12,6 @@ from dotenv import load_dotenv, find_dotenv
 
 # Get environment vars
 load_dotenv(find_dotenv())
-
-# Set logger
-logger = logger('connector')
 
 
 def get_snowflake_connection(method):
@@ -56,7 +52,7 @@ def s3_conn(func):
         """ Provides a series of checks for S3 before running a function provided """
 
         s3_client, s3_resource = boto3.client('s3'), boto3.resource('s3')
-        logger.info('Successfully connected to S3.')
+        print('Successfully connected to S3.')
 
         # Stores the passed args and kwargs into available lists
         arg_vars, kw_vars = [arg for arg in args], [arg for arg in kwargs]
@@ -69,12 +65,12 @@ def s3_conn(func):
                 buckets = [name['Name'] for name in s3_client.list_buckets()['Buckets']]
                 matches = [name for name in arg_vars if name in buckets]
                 if not matches:
-                    logger.error(f'S3 Bucket provided does not exist: {arg_vars}')
+                    print(f'S3 Bucket provided does not exist: {arg_vars}')
 
             return func(*args, **kwargs)
 
         except Exception as e:
-            logger.error(f"Something went wrong: {e}")
+            print(f"Something went wrong: {e}")
             sys.exit(-1)
 
     return wrapper_s3_checks

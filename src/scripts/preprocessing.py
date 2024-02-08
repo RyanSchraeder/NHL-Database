@@ -7,10 +7,6 @@ import warnings
 from pydantic import BaseModel, ValidationError, ConfigDict
 from typing import Optional, List
 from datetime import datetime as dt
-from logger import logger
-
-# LOGGING
-logger = logger('data_transformations')
 
 # Suppress FutureWarning messages
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -43,8 +39,9 @@ class DataTransform(BaseModel):
         dataframe['updated_at'] = date
 
         # Transforming data
-        dataframe['length_of_game_min'] = [i.replace(':', '') for i in dataframe['length_of_game_min']]
-        dataframe['length_of_game_min'] = [(int(i[0]) * 60) + int(i[1:]) for i in dataframe['length_of_game_min']]
+        dataframe['length_of_game_min'] = dataframe['length_of_game_min'].apply(
+            lambda x: (int(str(x).split(":")[0]) * 60) + (int(str(x).split(":")[1])) if str(x).lower() != 'nan' else x
+        )
 
         dataframe.date = dataframe.date.apply(pd.to_datetime)
 

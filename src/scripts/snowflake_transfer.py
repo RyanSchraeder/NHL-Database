@@ -12,7 +12,9 @@ from snowflake.connector import ProgrammingError
 from connectors import get_legacy_session
 from snowflake_queries import *
 from preprocessing import DataTransform
-from logger import logger
+
+# Orchestration
+from prefect import flow, task, get_run_logger
 
 # Data Source: https://www.hockey-reference.com/leagues/NHL_2022.html ##
 # TODO: S3 connection has been established. Now, the data needs to be moved from S3
@@ -27,184 +29,175 @@ from logger import logger
 transform = DataTransform
 
 
-# Logger
-logging = logger('snowflake_ingestion')
+def snowflake_query_exec(queries, method: str = 'standard'):
+    try:
+        logging = get_run_logger()
+
+        # Cursor & Connection
+        conn = get_snowflake_connection(method)
+        curs = conn.cursor()
+
+        # Retrieve formatted queries and execute
+        response = {}
+        for idx, query in queries.items():
+            curs.execute_async(query)
+            query_id = curs.sfqid
+            logging.info(f'Query added to queue: {query_id}')
+
+            curs.get_results_from_sfqid(query_id)
+
+            # IF THE SNOWFLAKE QUERY RETURNS DATA, STORE IT. ELSE, CONTINUE PROCESS.
+            result = curs.fetchone()
+            df = curs.fetch_pandas_all()
+
+            if result:
+                logging.info(f'Query completed successfully and stored: {query_id}')
+                response[idx] = result[0]
+
+                if len(df):
+                    return df
+
+            else:
+                pass
+
+            while conn.is_still_running(conn.get_query_status_throw_if_error(query_id)):
+                logging.info(f'Awaiting query completion for {query_id}')
+                time.sleep(1)
+
+        return response
+
+    except ProgrammingError as err:
+        logging.error(f'Programming Error: {err}')
 
 
-class SnowflakeIngest(object):
+@task(name="setup")
+def setup(
+    source: str,
+    endpoint: str = "https://www.hockey-reference.com/leagues/",
+    year: int = dt.datetime.now().year
+):
+    logging = get_run_logger()
 
-    def __init__(self, source, endpoint, year, s3_bucket_name, snowflake_conn):
-        """
-            :param s3_bucket_name: The bucket used to access S3 directories
-            :param snowflake_conn: The connection method used to connect to Snowflake: str ('standard', 'spark')
-        """
-        self.endpoint = endpoint
-        self.source = source
-        self.s3_bucket = s3_bucket_name
-        self.conn = get_snowflake_connection(snowflake_conn)
-        self.date = dt.date.today()
-
-        if year == "":
-            self.year = self.date.year
+    # Build endpoint URL & Filenames
+    paths = ('seasons', 'playoffs', 'teams')
+    if source in paths:
+        if source == 'seasons':
+            url = f"{endpoint}NHL_{year}_games.html#games"
+            filename = f"NHL_{year}_regular_season"
+        elif source == 'playoffs':
+            url = f"{endpoint}NHL_{year}_games.html#games_playoffs"
+            filename = f"NHL_{year}_playoff_season"
+        elif source == 'teams':
+            url = f"{endpoint}NHL_{year}.html#stats"
+            filename = f"NHL_{year}_team_stats"
         else:
-            self.year = year
+            pass
 
-        # Build endpoint URL
-        match source:
-            case 'seasons':
-                self.url = f"{self.endpoint}NHL_{year}_games.html#games"
-                self.filename = f"NHL_{year}_regular_season"
+    else:
+        logging.error(f'Invalid source specified: {source}')
+        sys.exit(1)
 
-            case 'playoffs':
-                self.url = f"{self.endpoint}NHL_{year}_games.html#games_playoffs"
-                self.filename = f"NHL_{year}_playoff_season"
+    return url, filename
 
-            case 'teams':
-                self.url = f"{self.endpoint}NHL_{year}.html#stats"
-                self.filename = f"NHL_{year}_team_stats"
 
-    def file_parser(self):
-        """ Download raw source data and upload to S3
-            Data Source: hockeyreference.com
+@task(name="file_parser")
+def file_parser(source, url, snowflake_conn, year: int = dt.datetime.now().year):
+    """ Download raw source data and upload to S3
+        Data Source: hockeyreference.com
 
-            TODO: Complete teams statistics and playoff record transformations
-        """
-        try:
-            response = get_legacy_session().get(self.url)
-            dataframes = pd.read_html(response.text)
-            dataframe = pd.concat(dataframes, axis=0, ignore_index=True).reset_index(drop=True)
+        TODO: Complete teams statistics and playoff record transformations
+    """
+    try:
+        logging = get_run_logger()
+        response = get_legacy_session().get(url)
+        dataframes = pd.read_html(response.text)
+        dataframe = pd.concat(dataframes, axis=0, ignore_index=True).reset_index(drop=True)
 
-            if self.source == 'seasons':
+        if source == 'seasons':
 
-                logging.info('Transforming data...')
-                dataframe = transform.seasons(dataframe, self.date)
+            logging.info('Transforming data...')
+            dataframe = transform.seasons(dataframe, year)
 
-                logging.info('Checking column mappings...')
-                checks = self.snowflake_query_exec(snowflake_checks('regular_season'))
-                len_source, len_dest = len(dataframe.columns), len(checks)
-
-                logging.info(
-                    f'Destination mappings: {len_dest}'
-                    '\n'
-                    f'Source mappings: {len_source}'
-                )
-
-                if not len_dest == len_source:
-                    logging.error('Length of source columns does not match number of destination columns.')
-                    sys.exit(1)
+            logging.info('Checking column mappings...')
+            checks = snowflake_query_exec(snowflake_checks('regular_season'), method=snowflake_conn)
+            len_source, len_dest = len(dataframe.columns), len(checks)
 
             logging.info(
-                f'Retrieved data with columns: {dataframe.columns}'
-                f'\n'
-                f'Preview: \n{dataframe.head(3)}'
+                f'Destination mappings: {len_dest}'
+                '\n'
+                f'Source mappings: {len_source}'
             )
 
-            return dataframe
+            if not len_dest == len_source:
+                logging.error('Length of source columns does not match number of destination columns.')
+                sys.exit(1)
 
-        except Exception as e:
-            logging.error(f'An error occurred while retrieving raw data: {e}')
+        logging.info(
+            f'Retrieved data with columns: {dataframe.columns}'
+            f'\n'
+            f'Preview: \n{dataframe.head(3)}'
+        )
 
-    @s3_conn
-    def s3_parser(self, data):
-        try:
-            # Establish connection
-            s3_client, s3_resource = boto3.client('s3'), boto3.resource('s3')
+        return dataframe
 
-            os.path.join('src/')
-
-            # Convert DF to CSV File
-            path = f'../data/{self.filename}.csv'
-            data.to_csv(path, index=False)
-
-            logging.info(f'Data stored at {path}')
-
-            # Build the targets
-            dst, filename = f'{self.s3_bucket}', f'{self.source}/{self.filename}.csv'
-
-            # Retrieve S3 paths & store raw file to s3
-            logging.info(f'Storing parsed data in S3 at {filename}')
-            s3_client.upload_file(
-                path, dst, filename
-            )
-        except Exception as e:
-            logging.error(f'An error occurred when storing data in S3: {e}')
-            sys.exit(1)
-
-    def snowflake_query_exec(self, queries):
-        try:
-            # Cursor & Connection
-            curs, conn = self.conn.cursor(), self.conn
-
-            # Retrieve formatted queries and execute
-            response = {}
-            for idx, query in queries.items():
-                curs.execute_async(query)
-                query_id = curs.sfqid
-                logging.info(f'Query added to queue: {query_id}')
-
-                curs.get_results_from_sfqid(query_id)
-
-                # IF THE SNOWFLAKE QUERY RETURNS DATA, STORE IT. ELSE, CONTINUE PROCESS.
-                result = curs.fetchone()
-                df = curs.fetch_pandas_all()
-
-                if result:
-                    logging.info(f'Query completed successfully and stored: {query_id}')
-                    response[idx] = result[0]
-
-                    if len(df):
-                        return df
-
-                else:
-                    pass
-
-                while conn.is_still_running(conn.get_query_status_throw_if_error(query_id)):
-                    logging.info(f'Awaiting query completion for {query_id}')
-                    time.sleep(1)
-
-            return response
-
-        except ProgrammingError as err:
-            logging.error(f'Programming Error: {err}')
+    except Exception as e:
+        logging.error(f'An error occurred while retrieving raw data: {e}')
 
 
-if __name__ in "__main__":
-    start = time.time()
-    parser = argparse.ArgumentParser(
-        prog="SnowflakeIngestion",
-        description="Move data from raw S3 uploads to a produced Schema in Snowflake"
-    )
+@task(name="s3_upload")
+@s3_conn
+def s3_parser(filename: str, data: pd.DataFrame, s3_bucket_name: str = 'nhl-data-raw'):
+    try:
 
-    parser.add_argument('source')
-    parser.add_argument('endpoint')
-    parser.add_argument('year')
-    parser.add_argument('s3_bucket_name')
-    parser.add_argument('snowflake_conn')
-    parser.add_argument('env')
+        logging = get_run_logger()
 
-    args = parser.parse_args()
+        # Establish connection
+        s3_client, s3_resource = boto3.client('s3'), boto3.resource('s3')
 
-    source = args.source if args.source is not None else ""
-    endpoint = args.endpoint if args.endpoint is not None else ""
-    year = args.year if args.year is not None else ""
-    # Example S3 URI : s3://nhl-data-raw/season/regular_season.csv
-    s3_bucket_name = args.s3_bucket_name if args.s3_bucket_name is not None else ""
-    snowflake_conn = args.snowflake_conn if args.snowflake_conn is not None else ""
-    env = args.env if args.env is not None else "development"
+        os.path.join('src/')
 
-    # Set up class and ingest data from Raw Source to S3
-    execute = SnowflakeIngest(source, endpoint, year, s3_bucket_name, snowflake_conn)
+        if os.path.exists('data'):
+            pass
+        else:
+            os.mkdir('data', mode=0o777)
 
-    # CREATE STAGES
-    stage = execute.snowflake_query_exec(snowflake_stages())
+        # Convert DF to CSV File
+        path = f'./data/{filename}.csv'
+        data.to_csv(path, index=False)
 
-    # CREATE SCHEMA
-    schema = execute.snowflake_query_exec(snowflake_schema())
+        logging.info(f'Data stored at {path}')
 
+        # Build the targets
+        dst, filename = f'{s3_bucket_name}', f'{source}/{filename}.csv'
+
+        # Retrieve S3 paths & store raw file to s3
+        logging.info(f'Storing parsed data in S3 at {filename}')
+        s3_client.upload_file(
+            path, dst, filename
+        )
+        logging.info(f'Successfully uploaded to S3')
+
+    except Exception as e:
+        logging.error(f'An error occurred when storing data in S3: {e}')
+        sys.exit(1)
+
+
+@flow(retries=1, retry_delay_seconds=5, log_prints=True)
+def snowflake_ingest(source, endpoint, year, s3_bucket_name, snowflake_conn, env):
+    url, filename = setup(source, endpoint, year)
+    logging = get_run_logger()
+
+    # Create stages
+    snowflake_query_exec(snowflake_stages(), method=snowflake_conn)
+
+    # Create Schemas
+    snowflake_query_exec(snowflake_schema(), method=snowflake_conn)
+
+    # Parse Files from Raw Endpoint
     # Only store data in S3 in Production
     if env == "development":
         try:
-            output_df = execute.file_parser()
+            file_parser(source, url, snowflake_conn, year)
             logging.info(
                 "\n"
                 "\t Process executed successfully in development. "
@@ -219,14 +212,43 @@ if __name__ in "__main__":
             )
     else:
         # INGEST RAW DATA TO S3
-        output_df = execute.file_parser()
-        execute.s3_parser(output_df)
+        output_df = file_parser(source, url, snowflake_conn, year)
+        s3_parser(filename=filename, data=output_df, s3_bucket_name=s3_bucket_name)
 
         # DEDUPE FROM SNOWFLAKE
-        execute.snowflake_query_exec(snowflake_cleanup(year))
+        snowflake_query_exec(snowflake_cleanup(year), method=snowflake_conn)
 
         # INGEST RAW DATA TO SNOWFLAKE
-        execute.snowflake_query_exec(snowflake_ingestion())
+        snowflake_query_exec(snowflake_ingestion(), method=snowflake_conn)
 
     end = time.time() - start
     logging.info(f'Process Completed. Time elapsed: {end}')
+
+
+if __name__ in "__main__":
+    start = time.time()
+    parser = argparse.ArgumentParser(
+        prog="SnowflakeIngestion",
+        description="Move data from raw S3 uploads to a produced Schema in Snowflake"
+    )
+
+    parser.add_argument('source')
+    parser.add_argument('--endpoint', default='https://www.hockey-reference.com/leagues/')
+    parser.add_argument('--year', default=dt.datetime.now().year)
+    parser.add_argument('--s3_bucket_name', default='nhl-data-raw')
+    parser.add_argument('--snowflake_conn', default='standard')
+    parser.add_argument('--env', default='development')
+
+    args = parser.parse_args()
+
+    source = args.source if args.source is not None else ""
+    endpoint = args.endpoint if args.endpoint is not None else ""
+    year = args.year if args.year is not None else ""
+
+    # Example S3 URI : s3://nhl-data-raw/season/regular_season.csv
+    s3_bucket_name = args.s3_bucket_name if args.s3_bucket_name is not None else ""
+    snowflake_conn = args.snowflake_conn if args.snowflake_conn is not None else ""
+    env = args.env if args.env is not None else "development"
+
+    # Execute the pipeline
+    snowflake_ingest(source, endpoint, year, s3_bucket_name, snowflake_conn, env)

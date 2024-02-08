@@ -1,30 +1,23 @@
-
-# LOGGING
-from logger import logger
-
-logger = logger('snowflake_queries')
-
-
 # QUERY EXECUTIONS
 def snowflake_stages():
     return {
         "create_parquet": """
-            create or replace file format parquet type='parquet'
+            create file format if not exists parquet type='parquet'
         """,
         "create_csv": """
-            create or replace file format csv type='csv' -- creates the file format to map incoming data structure to CSV
+            create file format if not exists csv type='csv' -- creates the file format to map incoming data structure to CSV
             field_delimiter = ','
             skip_header=1
         """,
         "csv": """
-            CREATE OR REPLACE STAGE nhl_raw_data_csv
+            CREATE STAGE IF NOT EXISTS nhl_raw_data_csv
             STORAGE_INTEGRATION = "aws_s3_integration"
             URL = 's3://nhl-data-raw/'
             -- CREDENTIALS = ''
             FILE_FORMAT = csv
         """,
         "parquet": """
-            CREATE OR REPLACE STAGE nhl_raw_data_parquet
+            CREATE STAGE IF NOT EXISTS nhl_raw_data_parquet
             STORAGE_INTEGRATION = "aws_s3_integration"
             URL = 's3://nhl-data-raw/'
             -- CREDENTIALS = ''
@@ -83,7 +76,7 @@ def snowflake_schema():
             )
         """,
         # "teams": """
-        #     create or replace table teams (
+        #     create table if not exists teams (
         #         team_id autoincrement start 1 increment 1,
         #         team_name varchar(100),
         #         city varchar(100),
@@ -118,7 +111,7 @@ def snowflake_schema():
 
 
 def snowflake_cleanup(load_year):
-    logger.info(
+    print(
         f"""
             Cleaning up data with query: \n
             DELETE FROM regular_season
@@ -134,7 +127,7 @@ def snowflake_cleanup(load_year):
 
 
 def snowflake_ingestion():
-    logger.info(
+    print(
         """
         Processing query to ingest data from S3 to Snowflake: 
     
