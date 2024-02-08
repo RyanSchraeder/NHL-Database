@@ -7,3 +7,5 @@ snowflake-connector-python[pandas]
 python-dotenv
 prefect
 lxml
+pyopenssl
+cryptography
