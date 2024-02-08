@@ -1,0 +1,37 @@
+# Welcome to your prefect.yaml file! You can use this file for storing and managing
+# configuration for deploying your flows. We recommend committing this file to source
+# control along with your flow code.
+
+# Generic metadata about this project
+name: NHL-Database
+prefect-version: 2.14.20
+
+# build section allows you to manage and build docker images
+build: null
+
+# push section allows you to manage if and how this project is uploaded to remote locations
+push: null
+
+# pull section allows you to provide instructions for cloning this project in remote locations
+pull:
+- prefect.deployments.steps.git_clone:
+    repository: https://github.com/RyanSchraeder/NHL-Database.git
+    branch: development
+
+# the deployments section allows you to provide configuration for deploying flows
+deployments:
+- name: nhl_pipeline
+  version: null
+  tags: []
+  description: null
+  entrypoint: src/scripts/snowflake_transfer.py:nhl_snowflake_ingest
+  parameters: {}
+  work_pool:
+    name: NHL_Pipeline_Pool
+    work_queue_name: null
+    job_variables: {}
+  schedule:
+    cron: 30 5 * * 7
+    timezone: GMT
+    day_or: true
+    active: true

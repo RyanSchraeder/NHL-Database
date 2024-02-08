@@ -14,7 +14,7 @@ from snowflake_queries import *
 from preprocessing import DataTransform
 
 # Orchestration
-from prefect import flow, task, get_run_logger
+from prefect import flow, task, get_run_logger, serve
 
 # Data Source: https://www.hockey-reference.com/leagues/NHL_2022.html ##
 # TODO: S3 connection has been established. Now, the data needs to be moved from S3
@@ -183,7 +183,7 @@ def s3_parser(filename: str, data: pd.DataFrame, s3_bucket_name: str = 'nhl-data
 
 
 @flow(retries=1, retry_delay_seconds=5, log_prints=True)
-def snowflake_ingest(source, endpoint, year, s3_bucket_name, snowflake_conn, env):
+def nhl_snowflake_ingest(source, endpoint, year, s3_bucket_name, snowflake_conn, env):
     url, filename = setup(source, endpoint, year)
     logging = get_run_logger()
 
@@ -251,4 +251,4 @@ if __name__ in "__main__":
     env = args.env if args.env is not None else "development"
 
     # Execute the pipeline
-    snowflake_ingest(source, endpoint, year, s3_bucket_name, snowflake_conn, env)
+    nhl_snowflake_ingest(source, endpoint, year, s3_bucket_name, snowflake_conn, env)
