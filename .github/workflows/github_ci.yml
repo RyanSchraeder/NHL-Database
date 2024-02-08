@@ -7,7 +7,7 @@
 # To get a newer version, you will need to update the SHA.
 # You can also reference a tag or branch, but the action may change without warning.
 
-name: Deploy to Amazon ECS
+name: Update Code and Deploy to Prefect
 
 on:
   push:
@@ -36,8 +36,6 @@ jobs:
         run: python -c "import sys; print(sys.version)"
       - name: Display AWS CLI version
         run: aws --version
-      - name: Setup Terraform
-        run: git clone https://github.com/mage-ai/mage-ai-terraform-templates.git
 
   build:
     needs: install
@@ -57,4 +55,4 @@ jobs:
           echo "SNOWFLAKE_DB=${{ secrets.SNOWFLAKE_DB }}" >> "$GITHUB_ENV"
           echo "SFSCHEMA=${{ secrets.SFSCHEMA }}" >> "$GITHUB_ENV"
       - name: Run core logic
-        run: python3 src/scripts/snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/ 2023 nhl-data-raw standard development
+        run: python src/scripts/snowflake_transfer.py seasons
