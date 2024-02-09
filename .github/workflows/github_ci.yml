@@ -64,3 +64,15 @@ jobs:
         run: |
           export
           python3 snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/ 2023 nhl-data-raw standard development
+          
+  deploy:
+    needs: build
+    name: Run Prefect Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Prefect 
+        uses: PrefectHQ/actions-prefect-deploy@v3
+        with:
+          deployment-names: Simple
+          requirements-file-paths: ./requirements.txt
+          prefect-file: ./prefect.yaml
