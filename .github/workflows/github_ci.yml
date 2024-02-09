@@ -56,14 +56,15 @@ jobs:
           echo "SFWH=${{ secrets.SFWH }}" >> "$GITHUB_ENV"
           echo "SNOWFLAKE_DB=${{ secrets.SNOWFLAKE_DB }}" >> "$GITHUB_ENV"
           echo "SFSCHEMA=${{ secrets.SFSCHEMA }}" >> "$GITHUB_ENV"
-          echo "PREFECT_WORKSPACE=${{ secrets.PREFECT_WORKSPACE }} " >> "$GITHUB_ENV"
-          echo "PREFECT_API_KEY=${{ secrets.PREFECT_API_KEY }} " >> "$GITHUB_ENV"
+          
           # SET THE PYTHONPATH TO THIS WORKSPACE
           echo "PYTHONPATH=${PYTHONPATH}:/home/runner/work/NHL-Database/src/scripts" >> "$GITHUB_ENV"
+          
       - name: Prefect Cloud login
         run: |
           prefect config set PREFECT_API_KEY=${{ secrets.PREFECT_API_KEY }}
           prefect cloud workspace set --workspace ${{ secrets.PREFECT_WORKSPACE }}
+          prefect config view
       - name: Dry Run Core Logic
         run: |
           export
