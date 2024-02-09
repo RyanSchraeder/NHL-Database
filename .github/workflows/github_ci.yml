@@ -55,4 +55,4 @@ jobs:
           echo "SNOWFLAKE_DB=${{ secrets.SNOWFLAKE_DB }}" >> "$GITHUB_ENV"
           echo "SFSCHEMA=${{ secrets.SFSCHEMA }}" >> "$GITHUB_ENV"
       - name: Run core logic
-        run: python src/scripts/snowflake_transfer.py seasons
+        run: python3 src/scripts/snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/ 2023 nhl-data-raw standard development
