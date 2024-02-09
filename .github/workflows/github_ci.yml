@@ -62,8 +62,8 @@ jobs:
           echo "PYTHONPATH=${PYTHONPATH}:/home/runner/work/NHL-Database/src/scripts" >> "$GITHUB_ENV"
       - name: Prefect Cloud login
         run: |
-          prefect config set PREFECT_API_KEY={{ secrets.PREFECT_API_KEY }}
-          prefect cloud workspace set --workspace {{ secrets.PREFECT_WORKSPACE }}
+          prefect config set PREFECT_API_KEY=${{ secrets.PREFECT_API_KEY }}
+          prefect cloud workspace set --workspace ${{ secrets.PREFECT_WORKSPACE }}
       - name: Dry Run Core Logic
         run: |
           export
