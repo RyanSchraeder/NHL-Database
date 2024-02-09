@@ -16,7 +16,7 @@ push: null
 pull:
 - prefect.deployments.steps.git_clone:
     repository: https://github.com/RyanSchraeder/NHL-Database.git
-    branch: development
+    branch: main
 
 # the deployments section allows you to provide configuration for deploying flows
 deployments:
