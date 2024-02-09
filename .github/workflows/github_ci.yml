@@ -58,7 +58,7 @@ jobs:
           echo "SFSCHEMA=${{ secrets.SFSCHEMA }}" >> "$GITHUB_ENV"
           
           # SET THE PYTHONPATH TO THIS WORKSPACE
-          echo "PYTHONPATH=${PYTHONPATH}:/home/runner/work/NHL-Database/src/scripts" >> "$GITHUB_ENV"
+          echo "PYTHONPATH=${PYTHONPATH}:/home/runner/work/NHL-Database/NHL-Database/" >> "$GITHUB_ENV"
           
       - name: Prefect Auth
         uses: PrefectHQ/actions-prefect-auth@v1
@@ -67,7 +67,7 @@ jobs:
           prefect-workspace: ${{ secrets.PREFECT_WORKSPACE }}
       - name: Prefect Dry-Run
         run: |
-          python3 snowflake_transfer.py seasons
+          python3 src/scripts/snowflake_transfer.py seasons
           
   # deploy:
   #   needs: build
