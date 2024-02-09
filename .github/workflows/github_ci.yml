@@ -54,5 +54,13 @@ jobs:
           echo "SFWH=${{ secrets.SFWH }}" >> "$GITHUB_ENV"
           echo "SNOWFLAKE_DB=${{ secrets.SNOWFLAKE_DB }}" >> "$GITHUB_ENV"
           echo "SFSCHEMA=${{ secrets.SFSCHEMA }}" >> "$GITHUB_ENV"
-      - name: Run core logic
-        run: python3 src/scripts/snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/ 2023 nhl-data-raw standard development
+          # SET THE PYTHONPATH TO THIS WORKSPACE
+          echo "PYTHONPATH=${PYTHONPATH}:/home/runner/work/NHL-Database/src/scripts" >> $GITHUB_ENV
+      - name: Prefect Cloud login
+        run: |
+          prefect config set PREFECT_API_KEY=${{secrets.PREFECT_API_KEY}} 
+          prefect cloud workspace set --workspace "${{secrets.PREFECT_WORKSPACE}}"
+      - name: Dry Run Core Logic
+        run: |
+          export
+          python3 snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/ 2023 nhl-data-raw standard development
