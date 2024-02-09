@@ -60,15 +60,14 @@ jobs:
           # SET THE PYTHONPATH TO THIS WORKSPACE
           echo "PYTHONPATH=${PYTHONPATH}:/home/runner/work/NHL-Database/src/scripts" >> "$GITHUB_ENV"
           
-      - name: Prefect Cloud login
+      - name: Prefect Auth
+        uses: PrefectHQ/actions-prefect-auth@v1
+        with:
+          prefect-api-key: ${{ secrets.PREFECT_API_KEY }}
+          prefect-workspace: ${{ secrets.PREFECT_WORKSPACE }}
+      - name: Prefect Dry-Run
         run: |
-          prefect config set PREFECT_API_KEY=${{ secrets.PREFECT_API_KEY }}
-          prefect cloud workspace set --workspace ${{ secrets.PREFECT_WORKSPACE }}
-          prefect config view
-      - name: Dry Run Core Logic
-        run: |
-          export
-          python3 snowflake_transfer.py seasons https://www.hockey-reference.com/leagues/ 2023 nhl-data-raw standard development
+          python3 snowflake_transfer.py seasons
           
   # deploy:
   #   needs: build
