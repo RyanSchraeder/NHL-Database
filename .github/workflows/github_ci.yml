@@ -79,6 +79,5 @@ jobs:
       - name: Deploy to Prefect 
         uses: PrefectHQ/actions-prefect-deploy@v3
         with:
-          deployment-names: Simple
-          requirements-file-paths: /home/runner/work/NHL-Database/NHL-Database/requirements.txt
-          prefect-file: /home/runner/work/NHL-Database/NHL-Database/prefect.yaml
+          deployment-names: nhl_pipeline
+          requirements-file-paths: requirements.txt
