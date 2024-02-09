@@ -12,7 +12,7 @@ name: Update Code and Deploy to Prefect
 on:
   push:
     branches:
-      - main
+      - development
 
 env:
   AWS_REGION: "us-east-1"                   # set this to your preferred AWS region, e.g. us-west-1
@@ -71,14 +71,14 @@ jobs:
         run: |
           python3 src/scripts/snowflake_transfer.py seasons
           
-  deploy:
-    needs: build
-    name: Run Prefect Deploy
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to Prefect 
-        uses: PrefectHQ/actions-prefect-deploy@v3
-        with:
-          deployment-names: Simple
-          requirements-file-paths: ./requirements.txt
-          prefect-file: ./prefect.yaml
+  # deploy:
+  #   needs: build
+  #   name: Run Prefect Deploy
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Deploy to Prefect 
+  #       uses: PrefectHQ/actions-prefect-deploy@v3
+  #       with:
+  #         deployment-names: nhl_pipeline
+  #         requirements-file-paths: ./requirements.txt
+  #         prefect-file: ./prefect.yaml
