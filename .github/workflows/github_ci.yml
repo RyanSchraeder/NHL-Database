@@ -80,5 +80,5 @@ jobs:
         uses: PrefectHQ/actions-prefect-deploy@v3
         with:
           deployment-names: Simple
-          requirements-file-paths: ./requirements.txt
-          prefect-file: ./prefect.yaml
+          requirements-file-paths: requirements.txt
+          prefect-file: prefect.yaml
