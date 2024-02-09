@@ -9,3 +9,4 @@ snowflake-connector-python[pandas]
 python-dotenv
 prefect
 cryptography==38.0.4
+pyopenssl==22.1.0
