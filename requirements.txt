@@ -8,5 +8,5 @@ snowflake-connector-python
 snowflake-connector-python[pandas]
 python-dotenv
 prefect
-openssl>22.1.0
+openssl
 cryptography==38.0.4
