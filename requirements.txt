@@ -9,3 +9,5 @@ prefect
 lxml
 pyopenssl
 cryptography
+cachetools
+python-dotenv
