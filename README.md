@@ -54,6 +54,7 @@ Parameters for the pipeline are established:
 
 #### WIP
 1. Finish the ingestion sources
+2. Deploy the Dockerfile into ECS to be used as a Prefect Agent for workflows
 2. Establish data models and transformation in the next phase within dbt Cloud
 3. Utilize data to build a Streamlit dashboard via Snowflake
 4. Utilize data to productionalize the initial Stanley Cup Predictions model
