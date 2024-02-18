@@ -87,11 +87,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         
-      - name: Deploy to Prefect 
-        uses: PrefectHQ/actions-prefect-deploy@v3
-        with:
-          deployment-names: nhl_pipeline
-          requirements-file-paths: requirements.txt
+      # - name: Deploy to Prefect 
+      #   uses: PrefectHQ/actions-prefect-deploy@v3
+      #   with:
+      #     deployment-names: nhl_pipeline
+      #     requirements-file-paths: requirements.txt
           
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@0e613a0980cbf65ed5b322eb7a1e075d28913a83
