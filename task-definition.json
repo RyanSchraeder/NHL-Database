@@ -18,31 +18,31 @@
                 },
                 {
                     "name": "SNOWFLAKE_DB",
-                    "value": "arn:aws:ssm:us-east-1:656379487547:parameter/SNOWFLAKE_DB"
+                    "valueFrom": "arn:aws:ssm:us-east-1:656379487547:parameter/SNOWFLAKE_DB"
                 },
                 {
                     "name": "SFWH",
-                    "value": "arn:aws:ssm:us-east-1:656379487547:parameter/SFWH"
+                    "valueFrom": "arn:aws:ssm:us-east-1:656379487547:parameter/SFWH"
                 },
                 {
                     "name": "PREFECT_WORKSPACE",
-                    "value": "arn:aws:ssm:us-east-1:656379487547:parameter/PREFECT_WORKSPACE"
+                    "valueFrom": "arn:aws:ssm:us-east-1:656379487547:parameter/PREFECT_WORKSPACE"
                 },
                 {
                     "name": "SFUSER",
-                    "value": "arn:aws:ssm:us-east-1:656379487547:parameter/SFUSER"
+                    "valueFrom": "arn:aws:ssm:us-east-1:656379487547:parameter/SFUSER"
                 },
                 {
                     "name": "SFPW",
-                    "value": "arn:aws:ssm:us-east-1:656379487547:parameter/SFPW"
+                    "valueFrom": "arn:aws:ssm:us-east-1:656379487547:parameter/SFPW"
                 },
                 {
                     "name": "SNOWFLAKE_ACCT",
-                    "value": "arn:aws:ssm:us-east-1:656379487547:parameter/SNOWFLAKE_ACCT"
+                    "valueFrom": "arn:aws:ssm:us-east-1:656379487547:parameter/SNOWFLAKE_ACCT"
                 },
                 {
                     "name": "SFSCHEMA",
-                    "value": "arn:aws:ssm:us-east-1:656379487547:parameter/SFSCHEMA"
+                    "valueFrom": "arn:aws:ssm:us-east-1:656379487547:parameter/SFSCHEMA"
                 }
             ],
             "logConfiguration": {
