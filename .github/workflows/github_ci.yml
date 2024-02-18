@@ -77,12 +77,11 @@ jobs:
     name: Run Prefect Deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to Prefect 
-        uses: PrefectHQ/actions-prefect-deploy@v3
-        with:
-          deployment-names: nhl_pipeline
-          requirements-file-paths: requirements.txt
-          prefect-file: ./prefect.yaml
+      # - name: Deploy to Prefect 
+      #   uses: PrefectHQ/actions-prefect-deploy@v3
+      #   with:
+      #     deployment-names: nhl_pipeline
+      #     requirements-file-paths: requirements.txt
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
