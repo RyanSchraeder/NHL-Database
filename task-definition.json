@@ -1,0 +1,136 @@
+{
+    "taskDefinitionArn": "arn:aws:ecs:us-east-1:656379487547:task-definition/nhl_data_pipeline_ecs_taskdefinition:latest",
+    "containerDefinitions": [
+        {
+            "name": "nhl_data_pipeline_ecs_container",
+            "image": "656379487547.dkr.ecr.us-east-1.amazonaws.com/nhl_data_pipeline_ecr_repo:latest",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "name": "nhl_data_pipeline_ecs_container-80-tcp",
+                    "containerPort": 80,
+                    "hostPort": 80,
+                    "protocol": "tcp",
+                    "appProtocol": "http"
+                }
+            ],
+            "essential": true,
+            "entryPoint": [
+                "src/scripts/snowflake_transfer.py"
+            ],
+            "command": [
+                "python src/scripts/snowflake_transfer.py seasons"
+            ],
+            "environment": [
+                {
+                    "name": "SNOWFLAKE_DB",
+                    "value": "arn:aws:ssm:us-east-1:656379487547:parameter/SNOWFLAKE_DB"
+                },
+                {
+                    "name": "SFWH",
+                    "value": "arn:aws:ssm:us-east-1:656379487547:parameter/SFWH"
+                },
+                {
+                    "name": "PREFECT_WORKSPACE",
+                    "value": "arn:aws:ssm:us-east-1:656379487547:parameter/PREFECT_WORKSPACE"
+                },
+                {
+                    "name": "SFUSER",
+                    "value": "arn:aws:ssm:us-east-1:656379487547:parameter/SFUSER"
+                },
+                {
+                    "name": "SFPW",
+                    "value": "arn:aws:ssm:us-east-1:656379487547:parameter/SFPW"
+                },
+                {
+                    "name": "SNOWFLAKE_ACCT",
+                    "value": "arn:aws:ssm:us-east-1:656379487547:parameter/SNOWFLAKE_ACCT"
+                },
+                {
+                    "name": "SFSCHEMA",
+                    "value": "arn:aws:ssm:us-east-1:656379487547:parameter/SFSCHEMA"
+                }
+            ],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "secrets": [
+                {
+                    "name": "PREFECT_API_KEY",
+                    "valueFrom": "arn:aws:ssm:us-east-1:656379487547:parameter/PREFECT_API_KEY"
+                }
+            ],
+            "workingDirectory": ".",
+            "ulimits": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-create-group": "true",
+                    "awslogs-group": "/ecs/nhl_data_pipeline_ecs_taskdefinition",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "ecs"
+                },
+                "secretOptions": []
+            }
+        }
+    ],
+    "family": "nhl_data_pipeline_ecs_taskdefinition",
+    "taskRoleArn": "arn:aws:iam::656379487547:role/AirflowECSTaskExecution",
+    "executionRoleArn": "arn:aws:iam::656379487547:role/AirflowECSTaskExecution",
+    "networkMode": "awsvpc",
+    "revision": 2,
+    "volumes": [],
+    "status": "ACTIVE",
+    "requiresAttributes": [
+        {
+            "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+        },
+        {
+            "name": "ecs.capability.execution-role-awslogs"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.ecr-auth"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.17"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.task-iam-role"
+        },
+        {
+            "name": "ecs.capability.execution-role-ecr-pull"
+        },
+        {
+            "name": "ecs.capability.secrets.ssm.environment-variables"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+        },
+        {
+            "name": "ecs.capability.task-eni"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.29"
+        }
+    ],
+    "placementConstraints": [],
+    "compatibilities": [
+        "EC2",
+        "FARGATE"
+    ],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "2048",
+    "runtimePlatform": {
+        "cpuArchitecture": "X86_64",
+        "operatingSystemFamily": "LINUX"
+    },
+    "registeredAt": "2024-02-18T02:12:11.909Z",
+    "registeredBy": "arn:aws:iam::656379487547:root",
+    "tags": []
+}
