@@ -4,7 +4,7 @@
         {
             "name": "nhl_data_pipeline_ecs_container",
             "image": "656379487547.dkr.ecr.us-east-1.amazonaws.com/nhl_data_pipeline_ecr_repo:latest",
-            "cpu": 0,
+            "cpu": 1,
             "portMappings": [
                 {
                     "name": "nhl_data_pipeline_ecs_container-80-tcp",
