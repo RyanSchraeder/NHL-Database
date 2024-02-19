@@ -4,9 +4,11 @@ FROM prefecthq/prefect:2-python3.10
 COPY requirements.txt .
 RUN pip install -r requirements.txt --trusted-host pypi.python.org --no-cache-dir
 
-# Add our flow code to the image
-COPY NHL-Database/ /opt/NHL-Database/
 WORKDIR /opt/NHL-Database/
+
+# Add our flow code to the image
+COPY src/ /opt/NHL-Database/src/
+COPY flows/ /opt/NHL-Database/flows/
 
 RUN prefect block register -m prefect_aws.ecs
 
