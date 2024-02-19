@@ -45,8 +45,8 @@ on:
 
 env:
   PROJECT: nhl-data-pipeline
-  ECR_REPOSITORY: nhl-data-pipeline-ecr-repo        # set this to your Amazon ECR repository name
-  ECS_CLUSTER: nhl-data-pipeline-ecs-cluster                 # set this to your Amazon ECS cluster name
+  ECR_REPOSITORY: nhl-data-pipeline        # set this to your Amazon ECR repository name
+  ECS_CLUSTER: nhl-data-pipeline                 # set this to your Amazon ECS cluster name
   BLOCK: ${{ github.event.inputs.block_name }}
   AWS_REGION: ${{ github.event.inputs.aws-region }}
   PREFECT_VERSION: ${{ github.event.inputs.prefect-version }}
