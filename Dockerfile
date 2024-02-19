@@ -6,7 +6,7 @@ RUN pip install -r requirements.txt --trusted-host pypi.python.org --no-cache-di
 
 # Add our flow code to the image
 COPY NHL-Database/ /opt/NHL-Database/
-WORKDIR .
+WORKDIR /opt/NHL-Database/
 
 RUN prefect block register -m prefect_aws.ecs
 
