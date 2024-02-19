@@ -7,11 +7,11 @@ import sys
 import os
 import boto3
 
-from connectors import get_snowflake_connection, s3_conn
+from src.connectors import get_snowflake_connection, s3_conn
+from src.connectors import get_legacy_session
 from snowflake.connector import ProgrammingError
-from connectors import get_legacy_session
-from snowflake_queries import *
-from preprocessing import DataTransform
+from src.snowflake_queries import *
+from src.preprocessing import DataTransform
 
 # Orchestration
 from prefect import flow, task, get_run_logger
