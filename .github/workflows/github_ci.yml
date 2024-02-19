@@ -15,12 +15,14 @@ on:
       - development
 
 env:
+  PROJECT: "nhl_data_pipeline"
   AWS_REGION: "us-east-1"                   # set this to your preferred AWS region, e.g. us-west-1
   ECR_REPOSITORY: "nhl_data_pipeline_ecr_repo"           # set this to your Amazon ECR repository name
   ECS_SERVICE: "nhl_data_pipeline_ecs_service"            # set this to your Amazon ECS service name
   ECS_CLUSTER: "nhl_data_pipeline_ecs_cluster"                 # set this to your Amazon ECS cluster name
   ECS_TASK_DEFINITION: ./task-definition.json  # set this to the path to your Amazon ECS task definition
                                                # file, e.g. .aws/task-definition.json
+  BLOCK: 'nhl_pipeline_dev'
   CONTAINER_NAME: "nhl_data_pipeline_ecs_container"          # set this to the name of the container in the
 
 jobs:
@@ -99,7 +101,27 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-    
+
+      - name: Add Prefect Cloud Secrets to SSM Parameter Store (needed for container in ECS task)
+        id: aws
+        run: |
+          aws ssm put-parameter --type SecureString --name PREFECT_API_URL --value ${{ secrets.PREFECT_API_URL }} --overwrite
+          aws ssm put-parameter --type SecureString --name PREFECT_API_KEY --value ${{ secrets.PREFECT_API_KEY }} --overwrite
+          export AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+          echo "accountid=$AWS_ACCOUNT_ID" >> $GITHUB_OUTPUT
+    #          echo ::set-output name=accountid::$AWS_ACCOUNT_ID
+
+      - name: Create new ECR repository using AWS CloudFormation
+        uses: aws-actions/aws-cloudformation-github-deploy@v1.1.0
+        with:
+          name: "${{ env.PROJECT }}-ecr"
+          template: infrastructure/ecr_repository.yml
+          parameter-overrides: "RepositoryName=${{ env.PROJECT }}"
+          no-fail-on-empty-changeset: "1"
+
+      - name: Flow deployment finished
+        run: echo "ECR repository created at $(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_STEP_SUMMARY
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@62f4f872db3836360b72999f4b87f1ff13310f3a
@@ -108,7 +130,7 @@ jobs:
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: latest
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           # Build a docker container and
           # push it to ECR so that it can
@@ -118,19 +140,30 @@ jobs:
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
-    
-      - name: Fill in the new image ID in the Amazon ECS task definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@c804dfbdd57f713b6c079302a4c01db7017a36fc
+
+      - name: Flow deployments finished
+        run: echo "ECR image ${{ steps.build-image.outputs.image }} built at $(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_STEP_SUMMARY
+
+      - name: Deploy to ECS with AWS CloudFormation
+        uses: aws-actions/aws-cloudformation-github-deploy@v1.1.0
         with:
-          task-definition: ${{ env.ECS_TASK_DEFINITION }}
-          container-name: ${{ env.CONTAINER_NAME }}
-          image: ${{ steps.build-image.outputs.image }}
-    
-      - name: Deploy Amazon ECS task definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@df9643053eda01f169e64a0e60233aacca83799a
+          name: ${{ env.PROJECT }}
+          template: infrastructure/ecs_cluster_prefect_agent.yml
+          capabilities: CAPABILITY_NAMED_IAM
+          parameter-overrides: "cpu=${{ github.event.inputs.cpu }},memory=${{ github.event.inputs.memory }},project=${{ env.PROJECT }},cluster=${{ env.ECS_CLUSTER }},image=${{ needs.ecr-repo.outputs.image }},awsaccountid=${{steps.aws.outputs.accountid}},region=${{ env.AWS_REGION }}"
+
+      - name: ECS Service Deployment finished
+        run: echo "ECS Service Deployment finished at $(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_STEP_SUMMARY
+
+      - name: Generate task definition
+        id: task-definition
+        run: aws ecs describe-task-definition --task-definition $PROJECT --query taskDefinition > task-definition.json
+
+      - name: Upload task definition as artifact
+        uses: actions/upload-artifact@v3
         with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ env.ECS_SERVICE }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+          name: ECS task definition
+          path: task-definition.json
+
+      - name: Summary
+        run: echo 'AWS ECS agent successfully deployed and ready to run your flows! :rocket:' >> $GITHUB_STEP_SUMMARY
