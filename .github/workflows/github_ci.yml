@@ -45,14 +45,11 @@ on:
 
 env:
   PROJECT: nhl_data_pipeline
-  AWS_REGION: us-east-1                  # set this to your preferred AWS region, e.g. us-west-1
   ECR_REPOSITORY: nhl_data_pipeline_ecr_repo           # set this to your Amazon ECR repository name
-  ECS_SERVICE: nhl_data_pipeline_ecs_service            # set this to your Amazon ECS service name
   ECS_CLUSTER: nhl_data_pipeline_ecs_cluster                 # set this to your Amazon ECS cluster name
-  ECS_TASK_DEFINITION: ./task-definition.json  # set this to the path to your Amazon ECS task definition
-                                               # file, e.g. .aws/task-definition.json
-  BLOCK: 'nhl_pipeline_dev'
-  CONTAINER_NAME: "nhl_data_pipeline_ecs_container"          # set this to the name of the container in the
+  BLOCK: ${{ github.event.inputs.block_name }}
+  AWS_REGION: ${{ github.event.inputs.aws-region }}
+  PREFECT_VERSION: ${{ github.event.inputs.prefect-version }}
 
 jobs:
   install:
