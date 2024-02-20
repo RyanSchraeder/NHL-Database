@@ -154,7 +154,7 @@ jobs:
       - name: Create new ECR repository using AWS CloudFormation
         uses: aws-actions/aws-cloudformation-github-deploy@v1.1.0
         with:
-          name: "${{ env.PROJECT }}-ecr"
+          name: "${{ env.ECR_REPOSITORY }}-ecr"
           template: infrastructure/ecr_repository.yml
           parameter-overrides: "RepositoryName=${{ env.PROJECT }}"
           no-fail-on-empty-changeset: "1"
