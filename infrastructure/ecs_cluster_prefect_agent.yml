@@ -34,7 +34,7 @@ Parameters:
   project:
     Type: String
     Description: Project name
-    Default: dataflowops
+    Default: nhl-data-pipeline
   image:
     Type: String
     Description: Docker image for the service
