@@ -7,7 +7,7 @@ pydantic
 snowflake-connector-python
 snowflake-connector-python[pandas]
 python-dotenv
-prefect>=2.0.0
+prefect
 cryptography==38.0.4
 pyopenssl==22.1.0
 prefect-aws>=0.1.8
