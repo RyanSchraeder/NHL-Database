@@ -156,7 +156,7 @@ jobs:
         with:
           name: "${{ env.ECR_REPOSITORY }}-ecr"
           template: infrastructure/ecr_repository.yml
-          parameter-overrides: "RepositoryName=${{ env.PROJECT }}"
+          parameter-overrides: "RepositoryName=${{ env.ECR_REPOSITORY }}"
           no-fail-on-empty-changeset: "1"
 
       - name: Flow deployment finished
