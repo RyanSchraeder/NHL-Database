@@ -10,6 +10,6 @@ python-dotenv
 prefect
 cryptography==38.0.4
 pyopenssl==22.1.0
-prefect-aws>=0.1.8
+prefect-aws
 s3fs>=2023.12.2
 sqlalchemy
