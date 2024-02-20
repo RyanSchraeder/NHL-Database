@@ -3,7 +3,7 @@ Description: Create ECR repository and lifecycle policy
 Parameters:
   RepositoryName:
     Type: String
-    Default: dataflowops
+    Default: nhl-data-pipeline
 Resources:
   MyRepository:
     Type: AWS::ECR::Repository
