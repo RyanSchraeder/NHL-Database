@@ -224,7 +224,7 @@ jobs:
       - name: Python dependencies
         run: |
           pip install prefect==$PREFECT_VERSION
-          pip install .
+          pip install -r requirements.txt
           prefect block register -m prefect_aws.ecs
 
       - name: Prefect Auth
@@ -321,7 +321,7 @@ jobs:
       - name: Python dependencies
         run: |
           pip install prefect==$PREFECT_VERSION
-          pip install .
+          pip install -r requirements.txt
 
       - name: Prefect Auth
         uses: PrefectHQ/actions-prefect-auth@v1
