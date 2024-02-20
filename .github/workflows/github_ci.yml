@@ -190,7 +190,7 @@ jobs:
           name: ${{ env.PROJECT }}
           template: infrastructure/ecs_cluster_prefect_agent.yml
           capabilities: CAPABILITY_NAMED_IAM
-          parameter-overrides: "cpu=${{ github.event.inputs.cpu }},memory=${{ github.event.inputs.memory }},project=${{ env.PROJECT }},cluster=${{ env.ECS_CLUSTER }},image=${{ needs.ecr-repo.outputs.image }},awsaccountid=${{steps.aws.outputs.accountid}},region=${{ env.AWS_REGION }}"
+          parameter-overrides: "cpu=${{ github.event.inputs.cpu }},memory=${{ github.event.inputs.memory }},project=${{ env.PROJECT }},cluster=${{ env.ECS_CLUSTER }},image=${{ steps.build-image.outputs.image }},awsaccountid=${{steps.aws.outputs.accountid}},region=${{ env.AWS_REGION }}"
 
       - name: ECS Service Deployment finished
         run: echo "ECS Service Deployment finished at $(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_STEP_SUMMARY
@@ -252,7 +252,7 @@ jobs:
           id_ = "${{ secrets.AWS_ACCESS_KEY_ID }}"
           key_ = "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
           path_ = "${{ github.event.inputs.s3_path }}"
-          img_ = "${{ needs.ecr-repo.outputs.image }}"
+          img_ = "${{ steps.build-image.outputs.image }}"
           block_ = "$BLOCK"
           cluster_ = "${{ env.ECS_CLUSTER }}"
           cpu_ = "${{ github.event.inputs.cpu }}"
