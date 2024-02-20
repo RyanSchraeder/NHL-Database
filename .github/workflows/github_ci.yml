@@ -208,31 +208,6 @@ jobs:
       - name: Summary
         run: echo 'AWS ECS agent successfully deployed and ready to run your flows! :rocket:' >> $GITHUB_STEP_SUMMARY
 
-  blocks:
-    name: Prefect Blocks & S3 Upload
-    runs-on: ubuntu-latest
-    needs: prefect-agent-ecs
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Set up Python 3.9
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
-
-      - name: Python dependencies
-        run: |
-          pip install prefect==$PREFECT_VERSION
-          pip install -r requirements.txt
-          prefect block register -m prefect_aws.ecs
-
-      - name: Prefect Auth
-        uses: PrefectHQ/actions-prefect-auth@v1
-        with:
-          prefect-api-key: ${{ secrets.PREFECT_API_KEY }}
-          prefect-workspace: ${{ secrets.PREFECT_WORKSPACE }}
-
       - name: AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
@@ -258,8 +233,8 @@ jobs:
           cpu_ = "${{ github.event.inputs.cpu }}"
           memory_ = "${{ github.event.inputs.memory }}"
           aws_acc_id = "$AWS_ACCOUNT_ID"
-          exec_role = f"arn:aws:iam::{aws_acc_id}:role/${{ env.PROJECT }}_ecs_execution_role"
-          task_role = f"arn:aws:iam::{aws_acc_id}:role/${{ env.PROJECT }}_ecs_task_role"
+          exec_role = f"arn:aws:iam::{aws_acc_id}:role/$PROJECT_ecs_execution_role"
+          task_role = f"arn:aws:iam::{aws_acc_id}:role/$PROJECT_ecs_task_role"
           
           aws_creds = AwsCredentials(aws_access_key_id=id_, aws_secret_access_key=key_)
           aws_creds.save(block_, overwrite=True)
@@ -281,17 +256,18 @@ jobs:
           ecs.save(block_, overwrite=True)
           EOF
           python aws_ecs_blocks.py
+          
       - name: Blocks creation finished
         run: echo "AWS and ECS blocks built at $(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload to S3 - maintenance flow
         id: maintenance
-        run: prefect deployment build utils/maintenance.py:maintenance -n $PROJECT -sb s3/$BLOCK -q $PROJECT -v $GITHUB_SHA -a -t maintenance --interval 10
+        run: prefect deployment build utilities/maintenance.py:maintenance -n $PROJECT -sb s3/$BLOCK -q $PROJECT -v $GITHUB_SHA -a -t maintenance --interval 10
 
   list-flows:
     name: List Prefect flows
     runs-on: ubuntu-latest
-    needs: blocks
+    needs: prefect-agent-ecs
     outputs:
       prefect_flows: ${{ steps.set-matrix.outputs.prefect_flows }}
     steps:
@@ -323,11 +299,10 @@ jobs:
           pip install prefect==$PREFECT_VERSION
           pip install -r requirements.txt
 
-      - name: Prefect Auth
-        uses: PrefectHQ/actions-prefect-auth@v1
-        with:
-          prefect-api-key: ${{ secrets.PREFECT_API_KEY }}
-          prefect-workspace: ${{ secrets.PREFECT_WORKSPACE }}
+      - name: Prefect Cloud login
+        run: |
+          prefect config set PREFECT_API_KEY=${{ secrets.PREFECT_API_KEY }} 
+          prefect config set PREFECT_API_URL=${{ secrets.PREFECT_API_URL }}
 
       - name: AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
