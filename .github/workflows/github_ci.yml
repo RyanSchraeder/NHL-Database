@@ -44,7 +44,7 @@ on:
         type: string
 
 env:
-  PROJECT: nhl-data-pipeline
+  PROJECT: nhl_data_pipeline
   ECR_REPOSITORY: nhl-data-pipeline        # set this to your Amazon ECR repository name
   ECS_CLUSTER: nhl-data-pipeline                 # set this to your Amazon ECS cluster name
   BLOCK: ${{ github.event.inputs.block_name }}
@@ -258,8 +258,8 @@ jobs:
           cpu_ = "${{ github.event.inputs.cpu }}"
           memory_ = "${{ github.event.inputs.memory }}"
           aws_acc_id = "$AWS_ACCOUNT_ID"
-          exec_role = f"arn:aws:iam::{aws_acc_id}:role/snowflake_role"
-          task_role = f"arn:aws:iam::{aws_acc_id}:role/snowflake_role"
+          exec_role = f"arn:aws:iam::{aws_acc_id}:role/${{ env.PROJECT }}_ecs_execution_role"
+          task_role = f"arn:aws:iam::{aws_acc_id}:role/${{ env.PROJECT }}_ecs_task_role"
           
           aws_creds = AwsCredentials(aws_access_key_id=id_, aws_secret_access_key=key_)
           aws_creds.save(block_, overwrite=True)
