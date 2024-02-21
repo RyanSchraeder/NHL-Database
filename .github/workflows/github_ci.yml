@@ -115,10 +115,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install requirements.txt
+
+      - name: Install requirements
         run: |
+          python3 -m pip install pip --upgrade
           python -m pip install tea "cup >= 3.2.13"
+          pip install pyopenssl --upgrade
           pip install prefect prefect-aws
+
       # - name: Deploy to Prefect 
       #   uses: PrefectHQ/actions-prefect-deploy@v3
       #   with:
