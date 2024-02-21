@@ -1,6 +1,6 @@
 s3fs==2023.12.2
 prefect==2.14.0
-prefect-aws
+prefect_aws
 sqlalchemy
 pandas
 numpy
