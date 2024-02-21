@@ -115,7 +115,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+      - name: Install requirements.txt
+        run: |
+          python -m pip install tea "cup >= 3.2.13"
+          pip install prefect prefect-aws
       # - name: Deploy to Prefect 
       #   uses: PrefectHQ/actions-prefect-deploy@v3
       #   with:
