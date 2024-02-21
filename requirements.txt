@@ -1,3 +1,6 @@
+s3fs==2023.12.2
+prefect==2.0.0
+sqlalchemy
 pandas
 numpy
 cachetools
@@ -7,9 +10,5 @@ pydantic
 snowflake-connector-python
 snowflake-connector-python[pandas]
 python-dotenv
-prefect
 cryptography==38.0.4
 pyopenssl==22.1.0
-prefect-aws
-s3fs>=2023.12.2
-sqlalchemy
