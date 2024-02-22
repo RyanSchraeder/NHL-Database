@@ -143,11 +143,17 @@ jobs:
           prefect-api-key: ${{ secrets.PREFECT_API_KEY }}
           prefect-workspace: ${{ secrets.PREFECT_WORKSPACE }}
 
+      - name: Prefect Cloud login
+        run: |
+          prefect config set PREFECT_API_KEY=${{ secrets.PREFECT_API_KEY }}
+          prefect config set PREFECT_API_URL=${{ secrets.PREFECT_API_URL }}
+
       - name: Add Prefect Cloud Secrets to SSM Parameter Store (needed for container in ECS task)
         id: aws
         run: |
           aws ssm put-parameter --type SecureString --name PREFECT_WORKSPACE --value ${{ secrets.PREFECT_WORKSPACE }} --overwrite
           aws ssm put-parameter --type SecureString --name PREFECT_API_KEY --value ${{ secrets.PREFECT_API_KEY }} --overwrite
+          aws ssm put-parameter --type SecureString --name PREFECT_API_URL --value ${{ secrets.PREFECT_API_URL }} --overwrite
           aws ssm put-parameter --type SecureString --name SNOWFLAKE_DB --value ${{ secrets.SNOWFLAKE_DB }} --overwrite
           aws ssm put-parameter --type SecureString --name SFWH --value ${{ secrets.SFWH }} --overwrite
           aws ssm put-parameter --type SecureString --name SFSCHEMA --value ${{ secrets.SFSCHEMA }} --overwrite
