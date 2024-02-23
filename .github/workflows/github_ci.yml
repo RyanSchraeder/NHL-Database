@@ -315,10 +315,11 @@ jobs:
         run: |
           prefect deployment build ${{ matrix.flows }}:nhl_snowflake_ingest -sb s3/$BLOCK -q $PROJECT -v $GITHUB_SHA -a -t $PROJECT -n $PROJECT -o nhl_snowflake_ingest.yaml -ib ecs-task/$BLOCK --skip-upload
           echo "flow_manifest=$FLOW_NAME.yaml" >> $GITHUB_OUTPUT
-#          echo ::set-output name=flow_manifest::$FLOW_NAME.yaml
+          echo ::set-output name=flow_manifest::$FLOW_NAME.yaml
 
       - name: Upload YAML deployment manifest as artifact
         uses: actions/upload-artifact@v3
         with:
           name: Deployment YAML manifests
-          path: ${{ steps.build.outputs.flow_manifest }}
+          path: "/home/runner/work/NHL-Database/NHL-Database/nhl_snowflake_ingest.yaml"
+          # path: ${{ steps.build.outputs.flow_manifest }}
