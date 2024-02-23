@@ -3,9 +3,6 @@
         {
             "name": "nhl-data-pipeline",
             "image": "656379487547.dkr.ecr.us-east-1.amazonaws.com/nhl-data-pipeline:ab00067747fd1cf6cae5e3dc7b41de356341bd3e",
-            "cpu": 0,
-            "links": [],
-            "portMappings": [],
             "essential": true,
             "entryPoint": [
                 "bash",
@@ -14,24 +11,14 @@
             "command": [
                 "prefect agent start -q nhl-data-pipeline"
             ],
-            "environment": [
-                {
-                    "name": "AWS_RETRY_MODE",
-                    "value": "adaptive"
-                },
-                {
-                    "name": "AWS_MAX_ATTEMPTS",
-                    "value": "10"
-                },
-                {
-                    "name": "PREFECT_LOGGING_LEVEL",
-                    "value": "INFO"
-                }
-            ],
             "environmentFiles": [],
             "mountPoints": [],
             "volumesFrom": [],
             "secrets": [
+                {
+                    "name": "PREFECT_WORKSPACE",
+                    "valueFrom": "arn:aws:ssm:us-east-1:656379487547:parameter/PREFECT_WORKSPACE"
+                },
                 {
                     "name": "PREFECT_API_URL",
                     "valueFrom": "arn:aws:ssm:us-east-1:656379487547:parameter/PREFECT_API_URL"
@@ -41,33 +28,20 @@
                     "valueFrom": "arn:aws:ssm:us-east-1:656379487547:parameter/PREFECT_API_KEY"
                 }
             ],
-            "stopTimeout": 120,
-            "dnsServers": [],
-            "dnsSearchDomains": [],
-            "extraHosts": [],
-            "dockerSecurityOptions": [],
-            "dockerLabels": {},
-            "ulimits": [],
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
                     "awslogs-group": "nhl-data-pipeline",
                     "awslogs-region": "us-east-1",
                     "awslogs-stream-prefix": "nhl-data-pipeline"
-                },
-                "secretOptions": []
-            },
-            "systemControls": [],
-            "credentialSpecs": []
+                }
+            }
         }
     ],
     "family": "nhl-data-pipeline",
     "taskRoleArn": "arn:aws:iam::656379487547:role/nhl-data-pipeline_ecs_task_role",
     "executionRoleArn": "arn:aws:iam::656379487547:role/nhl-data-pipeline_ecs_execution_role",
     "networkMode": "awsvpc",
-    "revision": 19,
-    "volumes": [],
-    "status": "ACTIVE",
     "requiresAttributes": [
         {
             "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
