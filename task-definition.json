@@ -2,7 +2,7 @@
     "containerDefinitions": [
         {
             "name": "nhl-data-pipeline",
-            "image": "656379487547.dkr.ecr.us-east-1.amazonaws.com/nhl-data-pipeline:ab00067747fd1cf6cae5e3dc7b41de356341bd3e",
+            "image": "656379487547.dkr.ecr.us-east-1.amazonaws.com/nhl-data-pipeline",
             "essential": true,
             "entryPoint": [
                 "bash",
