@@ -1,65 +1,113 @@
 {
     "containerDefinitions": [
         {
-            "name": "nhl_data_pipeline_ecs_container",
-            "image": "656379487547.dkr.ecr.us-east-1.amazonaws.com/nhl_data_pipeline_ecr_repo",
+            "name": "nhl-data-pipeline",
+            "image": "656379487547.dkr.ecr.us-east-1.amazonaws.com/nhl-data-pipeline:ab00067747fd1cf6cae5e3dc7b41de356341bd3e",
+            "cpu": 0,
+            "links": [],
+            "portMappings": [],
             "essential": true,
             "entryPoint": [
                 "bash",
                 "-c"
             ],
             "command": [
-                "prefect agent start -q nhl_data_pipeline_ecs_container"
+                "prefect agent start -q nhl-data-pipeline"
             ],
+            "environment": [
+                {
+                    "name": "AWS_RETRY_MODE",
+                    "value": "adaptive"
+                },
+                {
+                    "name": "AWS_MAX_ATTEMPTS",
+                    "value": "10"
+                },
+                {
+                    "name": "PREFECT_LOGGING_LEVEL",
+                    "value": "INFO"
+                }
+            ],
+            "environmentFiles": [],
+            "mountPoints": [],
+            "volumesFrom": [],
             "secrets": [
+                {
+                    "name": "PREFECT_API_URL",
+                    "valueFrom": "arn:aws:ssm:us-east-1:656379487547:parameter/PREFECT_API_URL"
+                },
                 {
                     "name": "PREFECT_API_KEY",
                     "valueFrom": "arn:aws:ssm:us-east-1:656379487547:parameter/PREFECT_API_KEY"
-                },
-                {
-                    "name": "SNOWFLAKE_DB",
-                    "valueFrom": "arn:aws:ssm:us-east-1:656379487547:parameter/SNOWFLAKE_DB"
-                },
-                {
-                    "name": "SFWH",
-                    "valueFrom": "arn:aws:ssm:us-east-1:656379487547:parameter/SFWH"
-                },
-                {
-                    "name": "PREFECT_WORKSPACE",
-                    "valueFrom": "arn:aws:ssm:us-east-1:656379487547:parameter/PREFECT_WORKSPACE"
-                },
-                {
-                    "name": "SFUSER",
-                    "valueFrom": "arn:aws:ssm:us-east-1:656379487547:parameter/SFUSER"
-                },
-                {
-                    "name": "SFPW",
-                    "valueFrom": "arn:aws:ssm:us-east-1:656379487547:parameter/SFPW"
-                },
-                {
-                    "name": "SNOWFLAKE_ACCT",
-                    "valueFrom": "arn:aws:ssm:us-east-1:656379487547:parameter/SNOWFLAKE_ACCT"
-                },
-                {
-                    "name": "SFSCHEMA",
-                    "valueFrom": "arn:aws:ssm:us-east-1:656379487547:parameter/SFSCHEMA"
                 }
             ],
+            "stopTimeout": 120,
+            "dnsServers": [],
+            "dnsSearchDomains": [],
+            "extraHosts": [],
+            "dockerSecurityOptions": [],
+            "dockerLabels": {},
+            "ulimits": [],
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
-                    "awslogs-create-group": "true",
-                    "awslogs-group": "nhl_data_pipeline_ecs_container",
+                    "awslogs-group": "nhl-data-pipeline",
                     "awslogs-region": "us-east-1",
-                    "awslogs-stream-prefix": "nhl_pipeline"
-                }
-            }
+                    "awslogs-stream-prefix": "nhl-data-pipeline"
+                },
+                "secretOptions": []
+            },
+            "systemControls": [],
+            "credentialSpecs": []
         }
     ],
-    "family": "nhl_data_pipeline_ecs_taskdefinition",
-    "taskRoleArn": "arn:aws:iam::656379487547:role/AirflowECSTaskExecution",
-    "executionRoleArn": "arn:aws:iam::656379487547:role/AirflowECSTaskExecution",
+    "family": "nhl-data-pipeline",
+    "taskRoleArn": "arn:aws:iam::656379487547:role/nhl-data-pipeline_ecs_task_role",
+    "executionRoleArn": "arn:aws:iam::656379487547:role/nhl-data-pipeline_ecs_execution_role",
     "networkMode": "awsvpc",
+    "revision": 19,
+    "volumes": [],
+    "status": "ACTIVE",
+    "requiresAttributes": [
+        {
+            "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+        },
+        {
+            "name": "ecs.capability.execution-role-awslogs"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.ecr-auth"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.17"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.task-iam-role"
+        },
+        {
+            "name": "ecs.capability.container-ordering"
+        },
+        {
+            "name": "ecs.capability.execution-role-ecr-pull"
+        },
+        {
+            "name": "ecs.capability.secrets.ssm.environment-variables"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+        },
+        {
+            "name": "ecs.capability.task-eni"
+        }
+    ],
+    "placementConstraints": [],
+    "compatibilities": [
+        "EC2",
+        "FARGATE"
+    ],
     "requiresCompatibilities": [
         "FARGATE"
     ],
