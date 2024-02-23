@@ -123,12 +123,6 @@ jobs:
           pip install pyopenssl --upgrade
           pip install s3fs
           pip install prefect prefect-aws
-
-      # - name: Deploy to Prefect 
-      #   uses: PrefectHQ/actions-prefect-deploy@v3
-      #   with:
-      #     deployment-names: nhl_pipeline
-      #     requirements-file-paths: requirements.txt
           
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@0e613a0980cbf65ed5b322eb7a1e075d28913a83
@@ -222,14 +216,6 @@ jobs:
       - name: Summary
         run: echo 'AWS ECS agent successfully deployed and ready to run your flows! :rocket:' >> $GITHUB_STEP_SUMMARY
 
-      - name: AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-          mask-aws-account-id: 'no'
-
       - name: Create Blocks & Upload to S3
         id: aws_ecs_ecs_blocks
         run: |
@@ -277,10 +263,6 @@ jobs:
       - name: Blocks creation finished
         run: echo "AWS and ECS blocks built at $(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_STEP_SUMMARY
 
-      - name: Upload to S3 - maintenance flow
-        id: maintenance
-        run: prefect deployment build utils/maintenance.py:maintenance -n $PROJECT -sb s3/$BLOCK -q $PROJECT -v $GITHUB_SHA -a -t maintenance --interval 10
-
   list-flows:
     name: List Prefect flows
     runs-on: ubuntu-latest
@@ -292,8 +274,6 @@ jobs:
         uses: actions/checkout@v3
       - id: set-matrix
         run: echo "prefect_flows=$(ls flows/*.py | jq -R -s -c 'split("\n")[:-1]')" >> $GITHUB_OUTPUT
-        # todo may need to remove double str in "\n"
-#        run: echo "::set-output name=prefect_flows::$(ls flows/*.py | jq -R -s -c 'split("\n")[:-1]')"
 
   deploy:
     name: Deploy
