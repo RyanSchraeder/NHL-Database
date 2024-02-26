@@ -7,9 +7,9 @@ RUN pip install -r requirements.txt --trusted-host pypi.python.org --no-cache-di
 WORKDIR /opt/NHL-Database/
 
 # Add our flow code to the image
-COPY src/ /opt/NHL-Database/src/
 COPY flows/ /opt/NHL-Database/flows/
 
+RUN ls -ltr
 RUN prefect block register -m prefect_aws.ecs
 
 # Run our flow script when the container starts
