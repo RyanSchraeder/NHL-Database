@@ -110,6 +110,7 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
+                  - s3:*
                   - ssm:GetParameters
                   - logs:CreateLogStream
                   - logs:CreateLogGroup
