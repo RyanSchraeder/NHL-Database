@@ -268,9 +268,7 @@ jobs:
     name: Deploy
     needs: prefect-agent-ecs
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        flows: ${{ fromJson(needs.list-flows.outputs.prefect_flows) }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
