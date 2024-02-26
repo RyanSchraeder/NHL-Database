@@ -299,7 +299,7 @@ jobs:
       - name: Deploy flows to S3
         id: build
         run: |
-          prefect deployment build snowflake_transfer:nhl_snowflake_ingest -sb s3/$BLOCK -q $PROJECT -v $GITHUB_SHA -a -t $PROJECT -n $PROJECT -o nhl_snowflake_ingest.yaml -ib ecs-task/$BLOCK --skip-upload
+          prefect deployment build flows/snowflake_transfer:nhl_snowflake_ingest -sb s3/$BLOCK -q $PROJECT -v $GITHUB_SHA -a -t $PROJECT -n $PROJECT -o nhl_snowflake_ingest.yaml -ib ecs-task/$BLOCK --skip-upload
           echo "flow_manifest=$FLOW_NAME.yaml" >> $GITHUB_OUTPUT
           echo ::set-output name=flow_manifest::$FLOW_NAME.yaml
 
