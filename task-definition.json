@@ -27,7 +27,6 @@
                 {
                     "name": "SFWH",
                     "value": "arn:aws:ssm:us-east-1:656379487547:parameter/SFWH"
-                     SFSCHEMA
                 },
                 {
                     "name": "SFSCHEMA",
