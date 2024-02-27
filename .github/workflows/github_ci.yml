@@ -234,16 +234,19 @@ jobs:
           img_ = "${{ steps.build-image.outputs.image }}"
           block_ = "$BLOCK"
           cluster_ = "${{ env.ECS_CLUSTER }}"
+          region_ = "${{ env.AWS_REGION }}"
+          project_ = "${{ env.PROJECT }}"
           cpu_ = "${{ github.event.inputs.cpu }}"
           memory_ = "${{ github.event.inputs.memory }}"
           aws_acc_id = "$AWS_ACCOUNT_ID"
-          exec_role = f"arn:aws:iam::{aws_acc_id}:role/${{ env.PROJECT }}_ecs_execution_role"
-          task_role = f"arn:aws:iam::{aws_acc_id}:role/${{ env.PROJECT }}_ecs_task_role"
-          task_ = "arn:aws:ecs:${{ env.AWS_REGION }}:{aws_acc_id}:task-definition/${{ env.PROJECT }}:latest"
+          exec_role = f"arn:aws:iam::{aws_acc_id}:role/{project_}_ecs_execution_role"
+          task_role = f"arn:aws:iam::{aws_acc_id}:role/{project_}_ecs_task_role"
+          task_ = f"arn:aws:ecs:{region_}:{aws_acc_id}:task-definition/{project_}:latest"
 
+          print("="*20)
           print("USING ROLES: \n")
-          print(f"arn:aws:iam::***:role/${{ env.PROJECT }}_ecs_execution_role")
-          print(f"arn:aws:iam::***:role/${{ env.PROJECT }}_ecs_task_role")
+          print(f"arn:aws:iam::***:role/{project_}_ecs_execution_role")
+          print(f"arn:aws:iam::***:role/{project_}_ecs_task_role")
           print(f"TASK DEFINITION: {task_}")
           print("="*20)
           
