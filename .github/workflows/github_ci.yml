@@ -239,8 +239,9 @@ jobs:
           aws_acc_id = "$AWS_ACCOUNT_ID"
           exec_role = f"arn:aws:iam::{aws_acc_id}:role/${{ env.PROJECT }}_ecs_execution_role"
           task_role = f"arn:aws:iam::{aws_acc_id}:role/${{ env.PROJECT }}_ecs_task_role"
+          task_ = "arn:aws:ecs:${{ env.AWS_REGION }}:{aws_acc_id}:task-definition/${{ env.PROJECT }}:latest"
 
-          print("USING TASK DEFINITIONS: \n")
+          print("USING ROLES: \n")
           print(f"arn:aws:iam::***:role/${{ env.PROJECT }}_ecs_execution_role")
           print(f"arn:aws:iam::***:role/${{ env.PROJECT }}_ecs_task_role")
           print("="*20)
@@ -261,6 +262,7 @@ jobs:
               cluster=cluster_,
               execution_role_arn=exec_role,
               task_role_arn=task_role,
+              task_definition_arn=task_
           )
           ecs.save(block_, overwrite=True)
           EOF
@@ -307,6 +309,7 @@ jobs:
           echo " Command for prefect deploy:  "
           echo "prefect deployment build flows/snowflake_transfer.py:nhl_snowflake_ingest -sb s3/$BLOCK -q $PROJECT -v $GITHUB_SHA -a -t $PROJECT -n $PROJECT -o nhl_snowflake_ingest.yaml -ib ecs-task/$BLOCK --skip-upload"
           prefect deployment build flows/snowflake_transfer.py:nhl_snowflake_ingest -sb s3/$BLOCK -q $PROJECT -v $GITHUB_SHA -a -t $PROJECT -n $PROJECT -o nhl_snowflake_ingest.yaml -ib ecs-task/$BLOCK --skip-upload > $PROJECT.yaml
+          # prefect deployment schedule create --cron 30 17 * * 7 America/Denver
           echo "flow_manifest=$FLOW_NAME.yaml" >> $GITHUB_OUTPUT
           # echo ::set-output name=flow_manifest::$FLOW_NAME.yaml
 
