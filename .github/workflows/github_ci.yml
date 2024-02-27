@@ -227,6 +227,7 @@ jobs:
           cat <<EOF > aws_ecs_blocks.py
           from prefect.filesystems import S3
           from prefect_aws.ecs import ECSTask, AwsCredentials
+          import json
           
           id_ = "${{ secrets.AWS_ACCESS_KEY_ID }}"
           key_ = "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
@@ -255,7 +256,8 @@ jobs:
 
           s3 = S3(bucket_path=path_, aws_access_key_id=id_, aws_secret_access_key=key_)
           s3.save(block_, overwrite=True)
-          
+
+          task_ = json.loads(task)
           ecs = ECSTask(
               aws_credentials=aws_creds,
               image=img_,
