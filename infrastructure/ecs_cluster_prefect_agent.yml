@@ -180,21 +180,21 @@ Resources:
               awslogs-stream-prefix: !Ref project
           Secrets:
             - Name: PREFECT_API_URL
-              ValueFrom: !Sub "arn:aws:ssm:${region}:${awsaccountid}:parameter/PREFECT_API_URL"
+              ValueFrom: !Sub "arn:aws:ssm:us-east-1:656379487547:parameter/PREFECT_API_URL"
             - Name: PREFECT_API_KEY
-              ValueFrom: !Sub "arn:aws:ssm:${region}:${awsaccountid}:parameter/PREFECT_API_KEY"
+              ValueFrom: !Sub "arn:aws:ssm:us-east-1:656379487547:parameter/PREFECT_API_KEY"
             - Name: SFUSER
-              ValueFrom: !Sub "arn:aws:ssm:${region}:${awsaccountid}:parameter/SFUSER"
+              ValueFrom: !Sub "arn:aws:ssm:us-east-1:656379487547:parameter/SFUSER"
             - Name: SFPW
-              ValueFrom: !Sub "arn:aws:ssm:${region}:${awsaccountid}:parameter/SFPW"
+              ValueFrom: !Sub "arn:aws:ssm:us-east-1:656379487547:parameter/SFPW"
             - Name: SNOWFLAKE_ACCT
-              ValueFrom: !Sub "arn:aws:ssm:${region}:${awsaccountid}:parameter/SNOWFLAKE_ACCT"
+              ValueFrom: !Sub "arn:aws:ssm:us-east-1:656379487547:parameter/SNOWFLAKE_ACCT"
             - Name: SFWH
-              ValueFrom: !Sub "arn:aws:ssm:${region}:${awsaccountid}:parameter/SFWH"
+              ValueFrom: !Sub "arn:aws:ssm:us-east-1:656379487547:parameter/SFWH"
             - Name: SFSCHEMA
-              ValueFrom: !Sub "arn:aws:ssm:${region}:${awsaccountid}:parameter/SFSCHEMA"
+              ValueFrom: !Sub "arn:aws:ssm:us-east-1:656379487547:parameter/SFSCHEMA"
             - Name: SNOWFLAKE_DB
-              ValueFrom: "arn:aws:ssm:${region}:${awsaccountid}:parameter/SNOWFLAKE_DB"
+              ValueFrom: "arn:aws:ssm:us-east-1:656379487547:parameter/SNOWFLAKE_DB"
       RequiresCompatibilities:
         - FARGATE
 
