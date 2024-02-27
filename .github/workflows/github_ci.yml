@@ -209,7 +209,7 @@ jobs:
         run: |
           aws ecs describe-task-definition --task-definition $PROJECT --query taskDefinition > task-definition.json
           echo "Task Definition Command: "
-          echo "task_definition=$(aws ecs describe-task-definition --task-definition $PROJECT)" >> $GITHUB_OUTPUT
+          echo "aws ecs describe-task-definition --task-definition $PROJECT"
           
       - name: Upload task definition as artifact
         uses: actions/upload-artifact@v3
@@ -241,7 +241,7 @@ jobs:
           aws_acc_id = "$AWS_ACCOUNT_ID"
           exec_role = f"arn:aws:iam::{aws_acc_id}:role/{project_}_ecs_execution_role"
           task_role = f"arn:aws:iam::{aws_acc_id}:role/{project_}_ecs_task_role"
-          task_ = f"${{ steps.task-definition.outputs.task_definition }}"
+          task_ = "./task-definition.json"
 
           print("="*20)
           print("USING ROLES: \n")
