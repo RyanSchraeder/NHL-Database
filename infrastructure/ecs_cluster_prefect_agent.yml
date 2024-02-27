@@ -164,6 +164,18 @@ Resources:
             - "-c"
           StopTimeout: 120
           Environment:
+            - Name: SFUSER
+              ValueFrom: !Sub "arn:aws:ssm:${region}:${awsaccountid}:parameter/SFUSER"
+            - Name: SFPW
+              ValueFrom: !Sub "arn:aws:ssm:${region}:${awsaccountid}:parameter/SFPW"
+            - Name: SNOWFLAKE_ACCT
+              ValueFrom: !Sub "arn:aws:ssm:${region}:${awsaccountid}:parameter/SNOWFLAKE_ACCT"
+            - Name: SFWH
+              ValueFrom: !Sub "arn:aws:ssm:${region}:${awsaccountid}:parameter/SFWH"
+            - Name: SFSCHEMA
+              ValueFrom: !Sub "arn:aws:ssm:${region}:${awsaccountid}:parameter/SFSCHEMA"
+            - Name: SNOWFLAKE_DB
+              ValueFrom: "arn:aws:ssm:${region}:${awsaccountid}:parameter/SNOWFLAKE_DB"
             - Name: PREFECT_LOGGING_LEVEL
               Value: INFO
             - Name: AWS_RETRY_MODE
