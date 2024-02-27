@@ -244,6 +244,7 @@ jobs:
           print("USING ROLES: \n")
           print(f"arn:aws:iam::***:role/${{ env.PROJECT }}_ecs_execution_role")
           print(f"arn:aws:iam::***:role/${{ env.PROJECT }}_ecs_task_role")
+          print(f"TASK DEFINITION: {task_}")
           print("="*20)
           
           aws_creds = AwsCredentials(aws_access_key_id=id_, aws_secret_access_key=key_)
