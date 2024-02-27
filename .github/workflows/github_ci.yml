@@ -257,7 +257,7 @@ jobs:
           s3 = S3(bucket_path=path_, aws_access_key_id=id_, aws_secret_access_key=key_)
           s3.save(block_, overwrite=True)
 
-          task_ = json.loads(task)
+          task_ = json.loads(task_)
           ecs = ECSTask(
               aws_credentials=aws_creds,
               image=img_,
