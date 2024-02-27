@@ -11,6 +11,33 @@
             "command": [
                 "prefect agent start -q nhl-data-pipeline"
             ],
+            "environment": [
+                {
+                    "name": "SFUSER",
+                    "value": "arn:aws:ssm:us-east-1:656379487547:parameter/SFUSER"
+                },
+                {
+                    "name": "SFPW",
+                    "value": "arn:aws:ssm:us-east-1:656379487547:parameter/SFPW"
+                },
+                {
+                    "name": "SNOWFLAKE_ACCT",
+                    "value": "arn:aws:ssm:us-east-1:656379487547:parameter/SNOWFLAKE_ACCT"
+                },
+                {
+                    "name": "SFWH",
+                    "value": "arn:aws:ssm:us-east-1:656379487547:parameter/SFWH"
+                     SFSCHEMA
+                },
+                {
+                    "name": "SFSCHEMA",
+                    "value": "arn:aws:ssm:us-east-1:656379487547:parameter/SFSCHEMA"
+                },
+                {
+                    "name": "SNOWFLAKE_DB",
+                    "value": "arn:aws:ssm:us-east-1:656379487547:parameter/SNOWFLAKE_DB"
+                }
+            ],
             "environmentFiles": [],
             "mountPoints": [],
             "volumesFrom": [],
