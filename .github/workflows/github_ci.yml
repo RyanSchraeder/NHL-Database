@@ -286,8 +286,8 @@ jobs:
 
       - name: Upload source modules for flows to S3
         run: |
-          aws s3 cp /home/runner/work/NHL-Database/NHL-Database/flows/snowflake_transfer.py/ s3://${{ github.event.inputs.s3_path }} --recursive
-          aws s3 cp /home/runner/work/NHL-Database/NHL-Database/flows/src/ s3://${{ github.event.inputs.s3_path }} --recursive 
+          aws s3 cp flows/snowflake_transfer.py s3://${{ github.event.inputs.s3_path }} --recursive
+          aws s3 cp flows/src/ s3://${{ github.event.inputs.s3_path }} --recursive 
       
   deploy:
     name: Deploy
