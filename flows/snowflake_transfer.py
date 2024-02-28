@@ -24,14 +24,6 @@ transform = DataTransform
 
 # Prefect Snowflake Connector
 credentials = SnowflakeCredentials.load("development")
-connector = SnowflakeConnector(
-    credentials=credentials,
-    database="NHL_STATS",
-    schema="PUBLIC",
-    warehouse="COMPUTE_WH",
-)
-connector.save("snowflake-connector")
-
 
 def snowflake_query_exec(queries, method: str = 'standard'):
     logging = get_run_logger()
@@ -73,7 +65,7 @@ def snowflake_query_exec(queries, method: str = 'standard'):
         # Retrieve formatted queries and execute - Fallback: Prefect Snowflake Connector. Sync
         # logging.warning(f"Snowflake cursor is empty! Attempting Prefect Connector.")
 
-        with SnowflakeConnector.load("snowflake-connector") as cnx:
+        with SnowflakeConnector.load("development") as cnx:
             for idx, query in queries.items():
                 cnx.execute(query)
                 # query_id = cnx.sfqid
