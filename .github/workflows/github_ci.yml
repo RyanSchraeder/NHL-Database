@@ -284,6 +284,11 @@ jobs:
       - name: Blocks creation finished
         run: echo "AWS and ECS blocks built at $(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_STEP_SUMMARY
 
+      - name: Upload source modules for flows to S3
+        run: |
+          aws s3 cp /flows/snowflake_transfer.py/ s3://${{ github.event.inputs.s3_path }} --recursive
+          aws s3 cp /flows/src/ s3://${{ github.event.inputs.s3_path }} --recursive 
+      
   deploy:
     name: Deploy
     needs: prefect-agent-ecs
