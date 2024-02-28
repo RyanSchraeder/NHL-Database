@@ -42,6 +42,8 @@ def get_snowflake_connection(method):
                 schema=params['schema']
             )
 
+            print(f"Standard Snowflake Connection: {conn}")
+
             return conn
 
         # if method == 'spark':
