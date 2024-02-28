@@ -208,8 +208,8 @@ jobs:
         id: task-definition
         run: |
           aws ecs describe-task-definition --task-definition $PROJECT --query taskDefinition > task-definition.json
-          echo "Task Definition Command: "
-          echo "aws ecs describe-task-definition --task-definition $PROJECT"
+          echo "arn=$(aws ecs describe-task-definition --task-definition $PROJECT | jq '.[] | .taskDefinitionArn')" >> $GITHUB_OUTPUT
+          echo "Task Definition ARN: $arn"
           
       - name: Upload task definition as artifact
         uses: actions/upload-artifact@v3
@@ -242,7 +242,15 @@ jobs:
           aws_acc_id = "$AWS_ACCOUNT_ID"
           exec_role = f"arn:aws:iam::{aws_acc_id}:role/{project_}_ecs_execution_role"
           task_role = f"arn:aws:iam::{aws_acc_id}:role/{project_}_ecs_task_role"
-          task_ = "./task-definition.json"
+          task_ = "${{ steps.task-definition.outputs.arn }}"
+          env={
+            "SFPW": "${{ secrets.SFPW }}",
+            "SFWH": "${{ secrets.SFWH }}",
+            "SFUSER": "${{ secrets.SFUSER }}",
+            "SFSCHEMA": "${{ secrets.SFSCHEMA }}",
+            "SNOWFLAKE_DB": "${{ secrets.SNOWFLAKE_DB }}",
+            "SNOWFLAKE_ACCT": "${{ secrets.SNOWFLAKE_ACCT }}"
+          }
 
           print("="*20)
           print("USING ROLES: \n")
@@ -268,7 +276,8 @@ jobs:
               cluster=cluster_,
               execution_role_arn=exec_role,
               task_role_arn=task_role,
-              task_definition=task_
+              task_definition=task_,
+              env=env
           )
           ecs.save(block_, overwrite=True)
           EOF
@@ -324,4 +333,3 @@ jobs:
         with:
           name: Deployment YAML manifests
           path: "/home/runner/work/NHL-Database/NHL-Database/nhl_snowflake_ingest.yaml"
-          # path: ${{ steps.build.outputs.flow_manifest }}
