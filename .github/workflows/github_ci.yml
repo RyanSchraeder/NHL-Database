@@ -288,7 +288,7 @@ jobs:
         run: |
           ls -ltr
           pwd
-          # aws s3 cp flows/snowflake_transfer.py s3://${{ github.event.inputs.s3_path }} --recursive
+          aws s3 cp flows/snowflake_transfer.py s3://${{ github.event.inputs.s3_path }}/snowflake_transfer.py --recursive
           # aws s3 cp flows/src/ s3://${{ github.event.inputs.s3_path }} --recursive 
       
   deploy:
