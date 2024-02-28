@@ -76,11 +76,11 @@ def snowflake_query_exec(queries, method: str = 'standard'):
         with SnowflakeConnector.load("snowflake-connector") as cnx:
             for idx, query in queries.items():
                 cnx.execute(query)
-                query_id = cnx.sfqid
-                logging.info(f'Query completed: {query_id}')
+                # query_id = cnx.sfqid
+                logging.info(f'Query completed: {query}')
 
                 while True:
-                    cnx.get_results_from_sfqid(query_id)
+                    # cnx.get_results_from_sfqid(query_id)
                     result = cnx.fetchone()
                     df = cnx.fetch_pandas_all()
 
