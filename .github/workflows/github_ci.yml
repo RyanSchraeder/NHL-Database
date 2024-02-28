@@ -264,7 +264,6 @@ jobs:
           s3 = S3(bucket_path=path_, aws_access_key_id=id_, aws_secret_access_key=key_)
           s3.save(block_, overwrite=True)
 
-          task_ = json.loads(task_)
           ecs = ECSTask(
               aws_credentials=aws_creds,
               image=img_,
@@ -275,7 +274,7 @@ jobs:
               cluster=cluster_,
               execution_role_arn=exec_role,
               task_role_arn=task_role,
-              task_definition=task_,
+              task_definition_arn=task_,
               env=env
           )
           ecs.save(block_, overwrite=True)
