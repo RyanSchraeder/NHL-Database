@@ -28,59 +28,59 @@ credentials = SnowflakeCredentials.load("development")
 def snowflake_query_exec(queries, method: str = 'standard'):
     logging = get_run_logger()
     try:
-        # # Cursor & Connection
-        # conn = get_snowflake_connection(method)
-        # logging.info(f"Snowflake connection established: {conn}")
-        #
+        # Cursor & Connection
+        conn = get_snowflake_connection(method)
+        logging.info(f"Snowflake connection established: {conn}")
+        
         response = {}
-        #
-        # if conn:
-        #     curs = conn.cursor()
-        #
-        #     # Retrieve formatted queries and execute - Snowflake Connector Form. Async
-        #     for idx, query in queries.items():
-        #         curs.execute_async(query)
-        #         query_id = curs.sfqid
-        #         logging.info(f'Query added to queue: {query_id}')
-        #
-        #         curs.get_results_from_sfqid(query_id)
-        #
-        #         # IF THE SNOWFLAKE QUERY RETURNS DATA, STORE IT. ELSE, CONTINUE PROCESS.
-        #         result = curs.fetchone()
-        #         df = curs.fetch_pandas_all()
-        #
-        #         if result:
-        #             logging.info(f'Query completed successfully and stored: {query_id}')
-        #             response[idx] = result[0]
-        #             if len(df):
-        #                 return df
-        #
-        #         while conn.is_still_running(conn.get_query_status_throw_if_error(query_id)):
-        #             logging.info(f'Awaiting query completion for {query_id}')
-        #             time.sleep(1)
-        #
-        #         return response
-        #
-        # if not conn:
-        # Retrieve formatted queries and execute - Fallback: Prefect Snowflake Connector. Sync
-        # logging.warning(f"Snowflake cursor is empty! Attempting Prefect Connector.")
-
-        with SnowflakeConnector.load("development") as cnx:
+        
+        if conn:
+            curs = conn.cursor()
+        
+            # Retrieve formatted queries and execute - Snowflake Connector Form. Async
             for idx, query in queries.items():
-                cnx.execute(query)
-                # query_id = cnx.sfqid
-                logging.info(f'Query completed: {query}')
+                curs.execute_async(query)
+                query_id = curs.sfqid
+                logging.info(f'Query added to queue: {query_id}')
+        
+                curs.get_results_from_sfqid(query_id)
+        
+                # IF THE SNOWFLAKE QUERY RETURNS DATA, STORE IT. ELSE, CONTINUE PROCESS.
+                result = curs.fetchone()
+                df = curs.fetch_pandas_all()
+        
+                if result:
+                    logging.info(f'Query completed successfully and stored: {query_id}')
+                    response[idx] = result[0]
+                    if len(df):
+                        return df
+        
+                while conn.is_still_running(conn.get_query_status_throw_if_error(query_id)):
+                    logging.info(f'Awaiting query completion for {query_id}')
+                    time.sleep(1)
+        
+                return response
+        
+        if not conn:
+        # Retrieve formatted queries and execute - Fallback: Prefect Snowflake Connector. Sync
+            logging.warning(f"Snowflake cursor is empty! Attempting Prefect Connector.")
 
-                while True:
-                    # cnx.get_results_from_sfqid(query_id)
-                    result = cnx.fetchone()
-                    df = cnx.fetch_pandas_all()
-
-                    if result:
-                        logging.info(f'Query completed successfully and stored: {query_id}')
-                        response[idx] = result[0]
-                        if len(df):
-                            return df
+            with SnowflakeConnector.load("development") as cnx:
+                for idx, query in queries.items():
+                    cnx.execute(query)
+                    # query_id = cnx.sfqid
+                    logging.info(f'Query completed: {query}')
+    
+                    while True:
+                        # cnx.get_results_from_sfqid(query_id)
+                        result = cnx.fetchone()
+                        df = cnx.fetch_pandas_all()
+    
+                        if result:
+                            logging.info(f'Query completed successfully and stored: {query_id}')
+                            response[idx] = result[0]
+                            if len(df):
+                                return df
 
     except ProgrammingError as err:
         logging.error(f'Programming Error: {err}')
