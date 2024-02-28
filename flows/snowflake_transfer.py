@@ -15,56 +15,80 @@ from src.preprocessing import DataTransform
 
 # Orchestration
 from prefect import flow, task, get_run_logger
+from prefect_snowflake import SnowflakeCredentials, SnowflakeConnector
 
 # Data Source: https://www.hockey-reference.com/leagues/NHL_2022.html ##
-# TODO: S3 connection has been established. Now, the data needs to be moved from S3
-#  into Snowflake from the existing stages.
-#       So:
-#           1) Create connection in code to Snowflake that will create the schema and upload the raw data. DONE
-#           2) Establish a snowflake session to transform the data and upload it into a clean schema. DONE
-#           3) Automate these processes in steps 1 & 2 with MWAA.
-
 
 # Data transformations
 transform = DataTransform
 
+# Prefect Snowflake Connector
+credentials = SnowflakeCredentials.load("development")
+connector = SnowflakeConnector(
+    credentials=credentials,
+    database="NHL_STATS",
+    schema="PUBLIC",
+    warehouse="COMPUTE_WH",
+)
+connector.save("snowflake-connector")
+
 
 def snowflake_query_exec(queries, method: str = 'standard'):
+    logging = get_run_logger()
     try:
-        logging = get_run_logger()
-
-        # Cursor & Connection
-        conn = get_snowflake_connection(method)
-        curs = conn.cursor()
-
-        # Retrieve formatted queries and execute
+        # # Cursor & Connection
+        # conn = get_snowflake_connection(method)
+        # logging.info(f"Snowflake connection established: {conn}")
+        #
         response = {}
-        for idx, query in queries.items():
-            curs.execute_async(query)
-            query_id = curs.sfqid
-            logging.info(f'Query added to queue: {query_id}')
+        #
+        # if conn:
+        #     curs = conn.cursor()
+        #
+        #     # Retrieve formatted queries and execute - Snowflake Connector Form. Async
+        #     for idx, query in queries.items():
+        #         curs.execute_async(query)
+        #         query_id = curs.sfqid
+        #         logging.info(f'Query added to queue: {query_id}')
+        #
+        #         curs.get_results_from_sfqid(query_id)
+        #
+        #         # IF THE SNOWFLAKE QUERY RETURNS DATA, STORE IT. ELSE, CONTINUE PROCESS.
+        #         result = curs.fetchone()
+        #         df = curs.fetch_pandas_all()
+        #
+        #         if result:
+        #             logging.info(f'Query completed successfully and stored: {query_id}')
+        #             response[idx] = result[0]
+        #             if len(df):
+        #                 return df
+        #
+        #         while conn.is_still_running(conn.get_query_status_throw_if_error(query_id)):
+        #             logging.info(f'Awaiting query completion for {query_id}')
+        #             time.sleep(1)
+        #
+        #         return response
+        #
+        # if not conn:
+        # Retrieve formatted queries and execute - Fallback: Prefect Snowflake Connector. Sync
+        # logging.warning(f"Snowflake cursor is empty! Attempting Prefect Connector.")
 
-            curs.get_results_from_sfqid(query_id)
+        with SnowflakeConnector.load("snowflake-connector") as cnx:
+            for idx, query in queries.items():
+                cnx.execute(query)
+                query_id = cnx.sfqid
+                logging.info(f'Query completed: {query_id}')
 
-            # IF THE SNOWFLAKE QUERY RETURNS DATA, STORE IT. ELSE, CONTINUE PROCESS.
-            result = curs.fetchone()
-            df = curs.fetch_pandas_all()
+                while True:
+                    cnx.get_results_from_sfqid(query_id)
+                    result = cnx.fetchone()
+                    df = cnx.fetch_pandas_all()
 
-            if result:
-                logging.info(f'Query completed successfully and stored: {query_id}')
-                response[idx] = result[0]
-
-                if len(df):
-                    return df
-
-            else:
-                pass
-
-            while conn.is_still_running(conn.get_query_status_throw_if_error(query_id)):
-                logging.info(f'Awaiting query completion for {query_id}')
-                time.sleep(1)
-
-        return response
+                    if result:
+                        logging.info(f'Query completed successfully and stored: {query_id}')
+                        response[idx] = result[0]
+                        if len(df):
+                            return df
 
     except ProgrammingError as err:
         logging.error(f'Programming Error: {err}')
@@ -92,6 +116,8 @@ def setup(
             filename = f"NHL_{year}_team_stats"
         else:
             pass
+
+        logging.info(f"URL Successfully Built: {url}\nDestination Filename: {filename}")
 
     else:
         logging.error(f'Invalid source specified: {source}')
@@ -181,6 +207,7 @@ def s3_parser(filename: str, data: pd.DataFrame, s3_bucket_name: str = 'nhl-data
         logging.error(f'An error occurred when storing data in S3: {e}')
         sys.exit(1)
 
+
 @task(name="snowflake_base_model")
 def snowflake_base_model(snowflake_conn):
     logging = get_run_logger()
@@ -210,14 +237,20 @@ def snowflake_load(year, snowflake_conn):
 
     return
 
+
 @flow(
     name='nhl_snowflake_ingest', retries=1, retry_delay_seconds=5, log_prints=True
 )
 def nhl_snowflake_ingest(source, endpoint, year, s3_bucket_name, snowflake_conn, env):
-    url, filename = setup(source, endpoint, year)
+    start = time.time()
     logging = get_run_logger()
 
+    # Prepare Source URL
+    url, filename = setup(source, endpoint, year)
+    logging.info(f'Source URL: {url}, Filename: {filename}')
+
     # Prepare snowflake stages and schemas
+    logging.info('Preparing snowflake base model for ingestion')
     snowflake_base_model(snowflake_conn)
 
     # Parse Files from Raw Endpoint
@@ -253,7 +286,7 @@ def nhl_snowflake_ingest(source, endpoint, year, s3_bucket_name, snowflake_conn,
 
 
 if __name__ in "__main__":
-    start = time.time()
+
     parser = argparse.ArgumentParser(
         prog="SnowflakeIngestion",
         description="Move data from raw S3 uploads to a produced Schema in Snowflake"
