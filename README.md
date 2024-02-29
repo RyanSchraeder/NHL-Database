@@ -65,7 +65,7 @@ Parameters for the pipeline are established:
 
 # Why Not Airflow? 
 
-#### Short Answer: *Saving 10X the Cost With Prefect!*
+#### Short Answer: *Saving 100x+ the Cost With Prefect!*
 
 ### Airflow Cost Vs. Prefect Architecture:
 
