@@ -6,7 +6,7 @@ Parameters:
   cluster:
     Type: String
     Description: Cluster name
-    Default: prefect
+    Default: nhl-data-pipeline-dev
 
 Resources:
   PrefectFargateCluster:

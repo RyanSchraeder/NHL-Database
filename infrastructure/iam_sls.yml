@@ -6,7 +6,7 @@ Parameters:
   project:
     Type: String
     Description: Project name
-    Default: prefect
+    Default: nhl-data-pipeline-dev
 
 Resources:
   ExecutionRole:
