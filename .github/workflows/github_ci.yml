@@ -10,12 +10,46 @@
 name: Update Code and Deploy to Prefect
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      cpu:
+        description: CPU for the agent
+        required: true
+        default: '512'
+        type: choice
+        options: ['256', '512', '1024', '2048', '4096']
+      memory:
+        description: Memory for the agent
+        required: true
+        default: '1024'
+        type: choice
+        options: ['512', '1024', '2048', '4096', '5120', '6144', '7168', '8192']
+      s3_path:
+        description: S3 path in the format bucket/path
+        required: true
+        default: 'nhl-pipeline-flows/production'
+      block_name:
+        description: Name of the S3 and ECS blocks
+        required: true
+        default: 'production'
+      prefect-version:
+        description: Prefect version for flows
+        required: true
+        default: '2.*'
+        type: string
+      aws-region:
+        description: AWS Region
+        required: true
+        default: 'us-east-1'
+        type: string
 
 env:
-  AWS_REGION: "us-east-1"                   # set this to your preferred AWS region, e.g. us-west-1
+  PROJECT: nhl-data-pipeline-prod
+  ECR_REPOSITORY: nhl-data-pipeline-prod        # set this to your Amazon ECR repository name
+  ECS_CLUSTER: nhl-data-pipeline-prod                 # set this to your Amazon ECS cluster name
+  BLOCK: ${{ github.event.inputs.block_name }}
+  AWS_REGION: ${{ github.event.inputs.aws-region }}
+  PREFECT_VERSION: ${{ github.event.inputs.prefect-version }}
 
 jobs:
   install:
@@ -67,17 +101,243 @@ jobs:
         with:
           prefect-api-key: ${{ secrets.PREFECT_API_KEY }}
           prefect-workspace: ${{ secrets.PREFECT_WORKSPACE }}
+
       - name: Prefect Dry-Run
         run: |
-          python3 src/scripts/snowflake_transfer.py seasons
+          python3 flows/snowflake_transfer.py seasons --env development
+          echo "Current working directory"
+          pwd
+
+  prefect-agent-ecs:
+    needs: build
+    name: Run Prefect Deployment to ECS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install requirements
+        run: |
+          python3 -m pip install pip --upgrade
+          python -m pip install tea "cup >= 3.2.13"
+          pip install pyopenssl --upgrade
+          pip install s3fs
+          pip install prefect prefect-aws
           
-  # deploy:
-  #   needs: build
-  #   name: Run Prefect Deploy
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Deploy to Prefect 
-  #       uses: PrefectHQ/actions-prefect-deploy@v3
-  #       with:
-  #         deployment-names: nhl_pipeline
-  #         requirements-file-paths: ./requirements.txt
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@0e613a0980cbf65ed5b322eb7a1e075d28913a83
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Prefect Auth
+        uses: PrefectHQ/actions-prefect-auth@v1
+        with:
+          prefect-api-key: ${{ secrets.PREFECT_API_KEY }}
+          prefect-workspace: ${{ secrets.PREFECT_WORKSPACE }}
+
+      - name: Prefect Cloud login
+        run: |
+          prefect config set PREFECT_API_KEY=${{ secrets.PREFECT_API_KEY }}
+          prefect config set PREFECT_API_URL=${{ secrets.PREFECT_API_URL }}
+
+      - name: Add Prefect Cloud Secrets to SSM Parameter Store (needed for container in ECS task)
+        id: aws
+        run: |
+          aws ssm put-parameter --type SecureString --name PREFECT_WORKSPACE --value ${{ secrets.PREFECT_WORKSPACE }} --overwrite
+          aws ssm put-parameter --type SecureString --name PREFECT_API_KEY --value ${{ secrets.PREFECT_API_KEY }} --overwrite
+          aws ssm put-parameter --type SecureString --name PREFECT_API_URL --value ${{ secrets.PREFECT_API_URL }} --overwrite
+          aws ssm put-parameter --type SecureString --name SNOWFLAKE_DB --value ${{ secrets.SNOWFLAKE_DB }} --overwrite
+          aws ssm put-parameter --type SecureString --name SFWH --value ${{ secrets.SFWH }} --overwrite
+          aws ssm put-parameter --type SecureString --name SFSCHEMA --value ${{ secrets.SFSCHEMA }} --overwrite
+          aws ssm put-parameter --type SecureString --name SFUSER --value ${{ secrets.SFUSER }} --overwrite
+          aws ssm put-parameter --type SecureString --name SFPW --value ${{ secrets.SFPW }} --overwrite
+          aws ssm put-parameter --type SecureString --name SNOWFLAKE_ACCT --value ${{ secrets.SNOWFLAKE_ACCT }} --overwrite
+
+          export AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+          echo "accountid=$AWS_ACCOUNT_ID" >> $GITHUB_OUTPUT
+          #          echo ::set-output name=accountid::$AWS_ACCOUNT_ID
+
+      - name: Create new ECR repository using AWS CloudFormation
+        uses: aws-actions/aws-cloudformation-github-deploy@v1.1.0
+        with:
+          name: "${{ env.ECR_REPOSITORY }}-ecr"
+          template: infrastructure/ecr_repository.yml
+          parameter-overrides: "RepositoryName=${{ env.ECR_REPOSITORY }}"
+          no-fail-on-empty-changeset: "1"
+
+      - name: Flow deployment finished
+        run: echo "ECR repository created at $(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_STEP_SUMMARY
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@62f4f872db3836360b72999f4b87f1ff13310f3a
+    
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Build a docker container and
+          # push it to ECR so that it can
+          # be deployed to ECS.
+          ls -ltr
+          pwd
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Flow deployments finished
+        run: echo "ECR image ${{ steps.build-image.outputs.image }} built at $(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_STEP_SUMMARY
+
+      - name: Deploy to ECS with AWS CloudFormation
+        uses: aws-actions/aws-cloudformation-github-deploy@v1.1.0
+        with:
+          name: ${{ env.PROJECT }}
+          template: infrastructure/ecs_cluster_prefect_agent.yml
+          capabilities: CAPABILITY_NAMED_IAM
+          parameter-overrides: "cpu=${{ github.event.inputs.cpu }}, memory=${{ github.event.inputs.memory }}, project=${{ env.PROJECT }}, cluster=${{ env.ECS_CLUSTER }}, image=${{ steps.build-image.outputs.image }}, awsaccountid=${{ steps.aws.outputs.accountid }}, region=${{ env.AWS_REGION }}"
+          no-fail-on-empty-changeset: "1"
+          
+      - name: ECS Service Deployment finished
+        run: echo "ECS Service Deployment finished at $(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_STEP_SUMMARY
+
+      - name: Generate task definition
+        id: task-definition
+        run: |
+          aws ecs describe-task-definition --task-definition $PROJECT --query taskDefinition > task-definition.json
+          echo "arn=$(aws ecs describe-task-definition --task-definition $PROJECT | jq '.[] | .taskDefinitionArn')" >> $GITHUB_OUTPUT
+          
+      - name: Upload task definition as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ECS task definition
+          path: task-definition.json
+
+      - name: Summary
+        run: echo 'AWS ECS agent successfully deployed and ready to run your flows! :rocket:' >> $GITHUB_STEP_SUMMARY
+
+      - name: Create Blocks & Upload to S3
+        id: aws_ecs_ecs_blocks
+        run: |
+          export AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+          cat <<EOF > aws_ecs_blocks.py
+          from prefect.filesystems import S3
+          from prefect_aws.ecs import ECSTask, AwsCredentials
+          import json
+          
+          id_ = "${{ secrets.AWS_ACCESS_KEY_ID }}"
+          key_ = "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          path_ = "${{ github.event.inputs.s3_path }}"
+          img_ = "${{ steps.build-image.outputs.image }}"
+          block_ = "$BLOCK"
+          cluster_ = "${{ env.ECS_CLUSTER }}"
+          region_ = "${{ env.AWS_REGION }}"
+          project_ = "${{ env.PROJECT }}"
+          cpu_ = "${{ github.event.inputs.cpu }}"
+          memory_ = "${{ github.event.inputs.memory }}"
+          aws_acc_id = "$AWS_ACCOUNT_ID"
+          exec_role = f"arn:aws:iam::{aws_acc_id}:role/{project_}_ecs_execution_role"
+          task_role = f"arn:aws:iam::{aws_acc_id}:role/{project_}_ecs_task_role"
+          task_ = ${{ steps.task-definition.outputs.arn }}
+          env={
+            "SFPW": "${{ secrets.SFPW }}",
+            "SFWH": "${{ secrets.SFWH }}",
+            "SFUSER": "${{ secrets.SFUSER }}",
+            "SFSCHEMA": "${{ secrets.SFSCHEMA }}",
+            "SNOWFLAKE_DB": "${{ secrets.SNOWFLAKE_DB }}",
+            "SNOWFLAKE_ACCT": "${{ secrets.SNOWFLAKE_ACCT }}"
+          }
+
+          print("="*20)
+          print("USING ROLES: \n")
+          print(f"arn:aws:iam::***:role/{project_}_ecs_execution_role")
+          print(f"arn:aws:iam::***:role/{project_}_ecs_task_role")
+          print(f"TASK DEFINITION: {task_}")
+          print("="*20)
+          
+          aws_creds = AwsCredentials(aws_access_key_id=id_, aws_secret_access_key=key_)
+          aws_creds.save(block_, overwrite=True)
+
+          s3 = S3(bucket_path=path_, aws_access_key_id=id_, aws_secret_access_key=key_)
+          s3.save(block_, overwrite=True)
+
+          ecs = ECSTask(
+              aws_credentials=aws_creds,
+              image=img_,
+              cpu=cpu_,
+              memory=memory_,
+              stream_output=True,
+              configure_cloudwatch_logs=True,
+              cluster=cluster_,
+              execution_role_arn=exec_role,
+              task_role_arn=task_role,
+              task_definition_arn=task_,
+              env=env
+          )
+          ecs.save(block_, overwrite=True)
+          EOF
+          python aws_ecs_blocks.py
+          
+      - name: Blocks creation finished
+        run: echo "AWS and ECS blocks built at $(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload source modules for flows to S3
+        run: |
+          ls -ltr
+          pwd
+          cd flows && ls -ltr
+
+          # S3 Copy - Flows & Modules
+          # aws s3 cp snowflake_transfer.py s3://${{ github.event.inputs.s3_path }}/snowflake_transfer.py --recursive
+          # aws s3 cp flows/src/ s3://${{ github.event.inputs.s3_path }} --recursive 
+      
+  deploy:
+    name: Deploy
+    needs: prefect-agent-ecs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      - name: Python dependencies
+        run: |
+          pip install prefect==$PREFECT_VERSION
+          pip install -r requirements.txt
+
+      - name: Prefect Cloud login
+        run: |
+          prefect config set PREFECT_API_KEY=${{ secrets.PREFECT_API_KEY }} 
+          prefect config set PREFECT_API_URL=${{ secrets.PREFECT_API_URL }}
+
+      - name: AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: 'no'
+
+      - name: Deploy flows to S3
+        id: build
+        run: |
+          echo " Command for prefect deploy:  "
+          echo "prefect deployment build flows/snowflake_transfer.py:nhl_snowflake_ingest -sb s3/$BLOCK -q $PROJECT -v $GITHUB_SHA -a -t $PROJECT -n $PROJECT -o nhl_snowflake_ingest.yaml -ib ecs-task/$BLOCK --skip-upload"
+          prefect deployment build flows/snowflake_transfer.py:nhl_snowflake_ingest -sb s3/$BLOCK -q $PROJECT -v $GITHUB_SHA -a -t $PROJECT -n $PROJECT -o nhl_snowflake_ingest.yaml -ib ecs-task/$BLOCK --skip-upload > $PROJECT.yaml
+          # prefect deployment schedule create --cron 30 17 * * 7 America/Denver
+          echo "flow_manifest=$FLOW_NAME.yaml" >> $GITHUB_OUTPUT
+          # echo ::set-output name=flow_manifest::$FLOW_NAME.yaml
+
+      - name: Upload YAML deployment manifest as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: Deployment YAML manifests
+          path: "/home/runner/work/NHL-Database/NHL-Database/nhl_snowflake_ingest.yaml"

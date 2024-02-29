@@ -1,5 +1,5 @@
 # NHL-Database
-Data engineering project utilizing AWS, Snowflake, Docker, Python and Prefect to build a data warehouse in Snowflake for accessibility of NHL data. 
+Data engineering project utilizing AWS ECS Fargate, CloudFormation (IaC), Snowflake, Docker, Python, SQL, and Prefect to build a data warehouse in Snowflake for accessibility of NHL data. 
 
 ## Workflow Architecture
 1. In Python, source data is retrieved from hockeyreference.com based upon an input parameter to retrieve the appropriate URL, which is then used to scrape data and transform it into tabular format (dataframe).
@@ -18,23 +18,34 @@ Parameters for the pipeline are established:
 | endpoint | The endpoint to request data from. This defaults to the regular season, but will be changed based upon the `source` provided. | 
 | year | Year of which to process data. Defaults to the current year at runtime |
 | s3_bucket_name | The name of the S3 Bucket location for storage of the output data. Defaults to the `nhl-data-raw` storage location and directory based upon `source` | 
-| snowflake_conn | Connection method for Snowflake. Optionally 'standard' or 'snowpark'. Snowpark capability will start a spark sesssion for connection to Snowpark. Defaults to a standard Snowflake Connector. |
+| snowflake_conn | Connection method for Snowflake. Optionally 'standard' or 'snowpark'. Snowpark capability will start a spark sesssion for connection to Snowpark. Defaults to a standard Snowflake Connector, falls back to a Prefect Snowflake Block. **NOTE: Currently only works with a Prefect Snowflake Block via ECS due to internal Python Snowflake connector issues and is limited to methods in the Prefect Snowflake library.** |
 | env | Environment connection. Default to 'development'. No data will be loaded in the development environment. |
 
 
+## Flow Diagram (Click to Expand)
 <p align="center">
-  <img src="/images/flow_diagram.png" />
+  <img src="/images/nhl_flow_diagram.png" />
 </p>
 
 
 ## Pipeline Tasks in Prefect
+ #### _Development_
+ <p align="center">
+  <img src="/images/prefectdev.png" />
+ </p>
 
+ #### _Production_
 <p align="center">
   <img src="/images/task_runs.png" />
 </p>
 
 ### Task Logs Example
-
+ #### _Development_
+<p align="center">
+  <img src="/images/prefectdevlogs.png" />
+</p>
+ 
+ #### _Production_
 <p align="center">
   <img src="/images/prefect_logging.png" />
 </p>
@@ -42,11 +53,12 @@ Parameters for the pipeline are established:
 ### Prefect Dashboard
 
 <p align="center">
-  <img src="/images/prefect_dashboard.png" />
+  <img src="images/prefect_dashboard.png" />
 </p>
 
 # Output Data in Snowflake
-
+## TBD: Playoffs, Teams, Players, Stanley Cup Final
+### Seasonal Games
 <p align="center">
   <img src="/images/snowflake_regular_season.png" />
 </p>

@@ -7,64 +7,84 @@ import sys
 import os
 import boto3
 
-from connectors import get_snowflake_connection, s3_conn
+from src.connectors import get_snowflake_connection, s3_conn
+from src.connectors import get_legacy_session
 from snowflake.connector import ProgrammingError
-from connectors import get_legacy_session
-from snowflake_queries import *
-from preprocessing import DataTransform
+from src.snowflake_queries import *
+from src.preprocessing import DataTransform
 
 # Orchestration
-from prefect import flow, task, get_run_logger, serve
+from prefect import flow, task, get_run_logger
+from prefect_snowflake import SnowflakeCredentials, SnowflakeConnector
 
 # Data Source: https://www.hockey-reference.com/leagues/NHL_2022.html ##
-# TODO: S3 connection has been established. Now, the data needs to be moved from S3
-#  into Snowflake from the existing stages.
-#       So:
-#           1) Create connection in code to Snowflake that will create the schema and upload the raw data. DONE
-#           2) Establish a snowflake session to transform the data and upload it into a clean schema. DONE
-#           3) Automate these processes in steps 1 & 2 with MWAA.
-
 
 # Data transformations
 transform = DataTransform
 
+# Prefect Snowflake Connector
+credentials = SnowflakeCredentials.load("development")
 
 def snowflake_query_exec(queries, method: str = 'standard'):
+    logging = get_run_logger()
     try:
-        logging = get_run_logger()
-
         # Cursor & Connection
         conn = get_snowflake_connection(method)
-        curs = conn.cursor()
-
-        # Retrieve formatted queries and execute
+        logging.info(f"Snowflake connection established: {conn}")
+        
         response = {}
-        for idx, query in queries.items():
-            curs.execute_async(query)
-            query_id = curs.sfqid
-            logging.info(f'Query added to queue: {query_id}')
+        
+        if conn:
+            curs = conn.cursor()
+        
+            # Retrieve formatted queries and execute - Snowflake Connector Form. Async
+            for idx, query in queries.items():
+                curs.execute_async(query)
+                query_id = curs.sfqid
+                logging.info(f'Query added to queue: {query_id}')
+        
+                curs.get_results_from_sfqid(query_id)
+        
+                # IF THE SNOWFLAKE QUERY RETURNS DATA, STORE IT. ELSE, CONTINUE PROCESS.
+                result = curs.fetchone()
+                df = curs.fetch_pandas_all()
+        
+                if result:
+                    logging.info(f'Query completed successfully and stored: {query_id}')
+                    response[idx] = result[0]
+                    if len(df):
+                        return df
+        
+                while conn.is_still_running(conn.get_query_status_throw_if_error(query_id)):
+                    logging.info(f'Awaiting query completion for {query_id}')
+                    time.sleep(1)
+        
+                return response
+        
+        if not conn:
+            # Retrieve formatted queries and execute - Fallback: Prefect Snowflake Connector. Sync
+            logging.warning(f"Snowflake cursor is empty! Attempting Prefect Connector.")
 
-            curs.get_results_from_sfqid(query_id)
-
-            # IF THE SNOWFLAKE QUERY RETURNS DATA, STORE IT. ELSE, CONTINUE PROCESS.
-            result = curs.fetchone()
-            df = curs.fetch_pandas_all()
-
-            if result:
-                logging.info(f'Query completed successfully and stored: {query_id}')
-                response[idx] = result[0]
-
-                if len(df):
-                    return df
-
-            else:
-                pass
-
-            while conn.is_still_running(conn.get_query_status_throw_if_error(query_id)):
-                logging.info(f'Awaiting query completion for {query_id}')
-                time.sleep(1)
-
-        return response
+            with SnowflakeConnector.load("development") as cnx:
+                for idx, query in queries.items():
+                    while True:
+                        
+                        logging.info(
+                            f"""
+                            Executing Query: \n'
+                            \t\t{query}\n
+                            """
+                        )
+                        result = cnx.fetch_one(query)
+                        # full_result = cnx.fetch_all()
+                        
+                        logging.info(f'Query Result from Prefect Snowflake: {result}')
+                        
+                        if result:
+                            logging.info(f'Query completed successfully and stored: {query}')
+                            response[idx] = result[0]
+                            if len(result):
+                                return result
 
     except ProgrammingError as err:
         logging.error(f'Programming Error: {err}')
@@ -77,7 +97,8 @@ def setup(
     year: int = dt.datetime.now().year
 ):
     logging = get_run_logger()
-
+    logging.info(f'Received endpoint {endpoint} for source {source} and year {year}.')
+    
     # Build endpoint URL & Filenames
     paths = ('seasons', 'playoffs', 'teams')
     if source in paths:
@@ -92,11 +113,11 @@ def setup(
             filename = f"NHL_{year}_team_stats"
         else:
             pass
-
     else:
         logging.error(f'Invalid source specified: {source}')
         sys.exit(1)
 
+    logging.info(f"URL Built: {url}\nDestination Filename: {filename}")
     return url, filename
 
 
@@ -146,7 +167,7 @@ def file_parser(source, url, snowflake_conn, year: int = dt.datetime.now().year)
 
 @task(name="s3_upload")
 @s3_conn
-def s3_parser(filename: str, data: pd.DataFrame, s3_bucket_name: str = 'nhl-data-raw'):
+def s3_parser(filename: str, data: pd.DataFrame, s3_folder: str, s3_bucket_name: str = 'nhl-data-raw'):
     try:
 
         logging = get_run_logger()
@@ -168,7 +189,7 @@ def s3_parser(filename: str, data: pd.DataFrame, s3_bucket_name: str = 'nhl-data
         logging.info(f'Data stored at {path}')
 
         # Build the targets
-        dst, filename = f'{s3_bucket_name}', f'{source}/{filename}.csv'
+        dst, filename = f'{s3_bucket_name}', f'{s3_folder}/{filename}.csv'
 
         # Retrieve S3 paths & store raw file to s3
         logging.info(f'Storing parsed data in S3 at {filename}')
@@ -180,6 +201,7 @@ def s3_parser(filename: str, data: pd.DataFrame, s3_bucket_name: str = 'nhl-data
     except Exception as e:
         logging.error(f'An error occurred when storing data in S3: {e}')
         sys.exit(1)
+
 
 @task(name="snowflake_base_model")
 def snowflake_base_model(snowflake_conn):
@@ -210,12 +232,20 @@ def snowflake_load(year, snowflake_conn):
 
     return
 
-@flow(retries=1, retry_delay_seconds=5, log_prints=True)
+
+@flow(
+    name='nhl_snowflake_ingest', retries=1, retry_delay_seconds=5, log_prints=True
+)
 def nhl_snowflake_ingest(source, endpoint, year, s3_bucket_name, snowflake_conn, env):
-    url, filename = setup(source, endpoint, year)
+    start = time.time()
     logging = get_run_logger()
 
+    # Prepare Source URL
+    url, filename = setup(source, endpoint, year)
+    logging.info(f'Source URL: {url}, Filename: {filename}')
+
     # Prepare snowflake stages and schemas
+    logging.info('Preparing snowflake base model for ingestion')
     snowflake_base_model(snowflake_conn)
 
     # Parse Files from Raw Endpoint
@@ -240,7 +270,7 @@ def nhl_snowflake_ingest(source, endpoint, year, s3_bucket_name, snowflake_conn,
         # INGEST RAW DATA TO S3
         logging.info("Extracting raw data from source, formatting and transformation, and loading it to S3")
         output_df = file_parser(source, url, snowflake_conn, year)
-        s3_parser(filename=filename, data=output_df, s3_bucket_name=s3_bucket_name)
+        s3_parser(filename=filename, data=output_df, s3_folder=source, s3_bucket_name=s3_bucket_name)
 
         # MINOR TRANSFORMATION & TRANSFER RAW DATA TO SNOWFLAKE
         # logging.info("Extracting raw data from S3 to transferred into Snowflake")
@@ -251,7 +281,7 @@ def nhl_snowflake_ingest(source, endpoint, year, s3_bucket_name, snowflake_conn,
 
 
 if __name__ in "__main__":
-    start = time.time()
+
     parser = argparse.ArgumentParser(
         prog="SnowflakeIngestion",
         description="Move data from raw S3 uploads to a produced Schema in Snowflake"
@@ -275,5 +305,7 @@ if __name__ in "__main__":
     snowflake_conn = args.snowflake_conn if args.snowflake_conn is not None else ""
     env = args.env if args.env is not None else "development"
 
+    print(f"Received Arguments: {args}")
+    
     # Execute the pipeline
     nhl_snowflake_ingest(source, endpoint, year, s3_bucket_name, snowflake_conn, env)

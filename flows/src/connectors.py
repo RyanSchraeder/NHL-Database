@@ -26,6 +26,12 @@ def get_snowflake_connection(method):
             "schema": os.getenv('SFSCHEMA')
         }
 
+        key_vals = {key: val for key, val in params.items() if not val}
+        
+        if len(key_vals) > 0: 
+            print(f"Value in environment variables is missing!: {key_vals}")
+            sys.exit(-1)
+            
         if method == 'standard':
             conn = snowflake.connector.connect(
                 user=params['user'],
@@ -35,6 +41,8 @@ def get_snowflake_connection(method):
                 database=params['database'],
                 schema=params['schema']
             )
+
+            print(f"Standard Snowflake Connection: {conn}")
 
             return conn
 

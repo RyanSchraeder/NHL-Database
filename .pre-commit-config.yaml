@@ -26,3 +26,8 @@ repos:
     rev: v0.942
     hooks:
       - id: mypy
+  - repo: https://github.com/python-poetry/poetry
+    hooks:
+      - id: poetry-export
+        args: ["-f", "requirements.txt"]
+        verbose: true
