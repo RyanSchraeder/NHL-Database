@@ -67,20 +67,24 @@ def snowflake_query_exec(queries, method: str = 'standard'):
 
             with SnowflakeConnector.load("development") as cnx:
                 for idx, query in queries.items():
-                    cnx.execute(query)
-                    # query_id = cnx.sfqid
-                    logging.info(f'Query completed: {query}')
-    
                     while True:
-                        # cnx.get_results_from_sfqid(query_id)
-                        result = cnx.fetch_one()
-                        full_result = cnx.fetch_all()
-    
+                        
+                        logging.info(
+                            f"""
+                            Executing Query: \n'
+                            \t\t{query}\n
+                            """
+                        )
+                        result = cnx.fetch_one(query)
+                        # full_result = cnx.fetch_all()
+                        
+                        logging.info(f'Query Result from Prefect Snowflake: {result}')
+                        
                         if result:
                             logging.info(f'Query completed successfully and stored: {query}')
                             response[idx] = result[0]
-                            if len(full_result):
-                                return full_result
+                            if len(result):
+                                return result
 
     except ProgrammingError as err:
         logging.error(f'Programming Error: {err}')
