@@ -53,7 +53,7 @@ Parameters for the pipeline are established:
 ### Prefect Dashboard
 
 <p align="center">
-  <img src="images/prefect_dashboard.png" />
+  <img src="images/prefect_deployment_dashboard.png" />
 </p>
 
 # Output Data in Snowflake
@@ -61,6 +61,22 @@ Parameters for the pipeline are established:
 ### Seasonal Games
 <p align="center">
   <img src="/images/snowflake_regular_season.png" />
+</p>
+
+# Why Not Airflow? 
+
+#### Airflow Cost Vs. Prefect Architecture:
+
+_Airflow_
+
+<p align="center">
+  <img src="/images/with_airflow.png" />
+</p>
+
+_Prefect_
+
+<p align="center">
+  <img src="/images/no_airflow.png" />
 </p>
 
 
