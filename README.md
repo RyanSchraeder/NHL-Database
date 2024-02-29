@@ -23,7 +23,7 @@ Parameters for the pipeline are established:
 
 
 <p align="center">
-  <img src="/images/flow_diagram.png" />
+  <img src="/images/nhlflow.png" />
 </p>
 
 
