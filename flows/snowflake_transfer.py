@@ -97,7 +97,8 @@ def setup(
     year: int = dt.datetime.now().year
 ):
     logging = get_run_logger()
-
+    logging.info(f'Received endpoint {endpoint} for source {source} and year {year}.')
+    
     # Build endpoint URL & Filenames
     paths = ('seasons', 'playoffs', 'teams')
     if source in paths:
@@ -112,13 +113,11 @@ def setup(
             filename = f"NHL_{year}_team_stats"
         else:
             pass
-
-        logging.info(f"URL Successfully Built: {url}\nDestination Filename: {filename}")
-
     else:
         logging.error(f'Invalid source specified: {source}')
         sys.exit(1)
 
+    logging.info(f"URL Built: {url}\nDestination Filename: {filename}")
     return url, filename
 
 
