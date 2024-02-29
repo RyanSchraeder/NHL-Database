@@ -305,5 +305,7 @@ if __name__ in "__main__":
     snowflake_conn = args.snowflake_conn if args.snowflake_conn is not None else ""
     env = args.env if args.env is not None else "development"
 
+    print(f"Received Arguments: {args}")
+    
     # Execute the pipeline
     nhl_snowflake_ingest(source, endpoint, year, s3_bucket_name, snowflake_conn, env)
