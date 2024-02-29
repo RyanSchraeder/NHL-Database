@@ -62,7 +62,7 @@ def snowflake_query_exec(queries, method: str = 'standard'):
                 return response
         
         if not conn:
-        # Retrieve formatted queries and execute - Fallback: Prefect Snowflake Connector. Sync
+            # Retrieve formatted queries and execute - Fallback: Prefect Snowflake Connector. Sync
             logging.warning(f"Snowflake cursor is empty! Attempting Prefect Connector.")
 
             with SnowflakeConnector.load("development") as cnx:
@@ -73,14 +73,14 @@ def snowflake_query_exec(queries, method: str = 'standard'):
     
                     while True:
                         # cnx.get_results_from_sfqid(query_id)
-                        result = cnx.fetchone()
-                        df = cnx.fetch_pandas_all()
+                        result = cnx.fetch_one()
+                        full_result = cnx.fetch_all()
     
                         if result:
-                            logging.info(f'Query completed successfully and stored: {query_id}')
+                            logging.info(f'Query completed successfully and stored: {query}')
                             response[idx] = result[0]
-                            if len(df):
-                                return df
+                            if len(full_result):
+                                return full_result
 
     except ProgrammingError as err:
         logging.error(f'Programming Error: {err}')
