@@ -22,6 +22,7 @@ Parameters for the pipeline are established:
 | env | Environment connection. Default to 'development'. No data will be loaded in the development environment. |
 
 
+## Flow Diagram (Click to Expand)
 <p align="center">
   <img src="/images/nhl_flow_diagram.png" />
 </p>
