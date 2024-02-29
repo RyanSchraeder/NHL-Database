@@ -18,7 +18,7 @@ Parameters for the pipeline are established:
 | endpoint | The endpoint to request data from. This defaults to the regular season, but will be changed based upon the `source` provided. | 
 | year | Year of which to process data. Defaults to the current year at runtime |
 | s3_bucket_name | The name of the S3 Bucket location for storage of the output data. Defaults to the `nhl-data-raw` storage location and directory based upon `source` | 
-| snowflake_conn | Connection method for Snowflake. Optionally 'standard' or 'snowpark'. Snowpark capability will start a spark sesssion for connection to Snowpark. Defaults to a standard Snowflake Connector. |
+| snowflake_conn | Connection method for Snowflake. Optionally 'standard' or 'snowpark'. Snowpark capability will start a spark sesssion for connection to Snowpark. Defaults to a standard Snowflake Connector, falls back to a Prefect Snowflake Block. **NOTE: Currently only works with a Prefect Snowflake Block via ECS due to internal Python Snowflake connector issues and is limited to methods in the Prefect Snowflake library. |
 | env | Environment connection. Default to 'development'. No data will be loaded in the development environment. |
 
 
