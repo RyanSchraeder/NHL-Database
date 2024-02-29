@@ -18,7 +18,7 @@ on:
       s3_path:
         description: S3 path in the format bucket/path
         required: true
-        default: 'prefect-orion/development'
+        default: 'nhl-pipeline-flows/development'
       s3_block_name:
         description: Name of the S3 block
         required: true
