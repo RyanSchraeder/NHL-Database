@@ -28,13 +28,23 @@ Parameters for the pipeline are established:
 
 
 ## Pipeline Tasks in Prefect
+ #### _Development_
+ <p align="center">
+  <img src="/images/prefectdev.png" />
+ </p>
 
+ #### _Production_
 <p align="center">
   <img src="/images/task_runs.png" />
 </p>
 
 ### Task Logs Example
-
+ #### _Development_
+<p align="center">
+  <img src="/images/prefectdevlogs.png" />
+</p>
+ 
+ #### _Production_
 <p align="center">
   <img src="/images/prefect_logging.png" />
 </p>
@@ -46,7 +56,8 @@ Parameters for the pipeline are established:
 </p>
 
 # Output Data in Snowflake
-
+## TBD: Playoffs, Teams, Players, Stanley Cup Final
+### Seasonal Games
 <p align="center">
   <img src="/images/snowflake_regular_season.png" />
 </p>
