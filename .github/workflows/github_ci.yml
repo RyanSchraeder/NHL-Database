@@ -27,11 +27,11 @@ on:
       s3_path:
         description: S3 path in the format bucket/path
         required: true
-        default: 'nhl-pipeline-flows/development'
+        default: 'nhl-pipeline-flows/production'
       block_name:
         description: Name of the S3 and ECS blocks
         required: true
-        default: 'development'
+        default: 'production'
       prefect-version:
         description: Prefect version for flows
         required: true
@@ -44,9 +44,9 @@ on:
         type: string
 
 env:
-  PROJECT: nhl-data-pipeline-dev
-  ECR_REPOSITORY: nhl-data-pipeline-dev        # set this to your Amazon ECR repository name
-  ECS_CLUSTER: nhl-data-pipeline-dev                 # set this to your Amazon ECS cluster name
+  PROJECT: nhl-data-pipeline-prod
+  ECR_REPOSITORY: nhl-data-pipeline-prod        # set this to your Amazon ECR repository name
+  ECS_CLUSTER: nhl-data-pipeline-prod                 # set this to your Amazon ECS cluster name
   BLOCK: ${{ github.event.inputs.block_name }}
   AWS_REGION: ${{ github.event.inputs.aws-region }}
   PREFECT_VERSION: ${{ github.event.inputs.prefect-version }}
@@ -104,7 +104,7 @@ jobs:
 
       - name: Prefect Dry-Run
         run: |
-          python3 flows/snowflake_transfer.py seasons
+          python3 flows/snowflake_transfer.py seasons --env development
           echo "Current working directory"
           pwd
           
