@@ -23,7 +23,7 @@ Parameters:
   cluster:
     Type: String
     Description: Cluster name
-    Default: nhl-data-pipeline-dev
+    Default: nhl-data-pipeline-prod
   awsaccountid:
     Type: String
     Description: AWS Account ID
@@ -34,7 +34,7 @@ Parameters:
   project:
     Type: String
     Description: Project name
-    Default: nhl-data-pipeline-dev
+    Default: nhl-data-pipeline-prod
   image:
     Type: String
     Description: Docker image for the service

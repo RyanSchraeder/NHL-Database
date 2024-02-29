@@ -18,11 +18,11 @@ on:
       s3_path:
         description: S3 path in the format bucket/path
         required: true
-        default: 'prefect-orion/development'
+        default: 'nhl-pipeline-flows/production'
       s3_block_name:
         description: Name of the S3 block
         required: true
-        default: 'development'
+        default: 'production'
       prefect-version:
         description: Prefect version for flows
         required: true
@@ -35,9 +35,9 @@ on:
         type: string
 
 env:
-  PROJECT: nhl-data-pipeline-dev
-  ECR_REPOSITORY: nhl-data-pipeline-dev        # set this to your Amazon ECR repository name
-  ECS_CLUSTER: nhl-data-pipeline-dev                 # set this to your Amazon ECS cluster name
+  PROJECT: nhl-data-pipeline-prod
+  ECR_REPOSITORY: nhl-data-pipeline-prod        # set this to your Amazon ECR repository name
+  ECS_CLUSTER: nhl-data-pipeline-prod                 # set this to your Amazon ECS cluster name
   BLOCK: ${{ github.event.inputs.block_name }}
   PREFECT_VERSION: ${{ github.event.inputs.prefect-version }}
   AWS_REGION: ${{ github.event.inputs.aws-region }}
@@ -134,7 +134,7 @@ jobs:
         id: build
         run: |
           FLOW_NAME=$(basename ${{ matrix.flows }} .py)
-          prefect deployment build ${{ matrix.flows }}:$FLOW_NAME --name ${{ env.PROJECT }} -q ${{ env.PROJECT }} -a -sb s3/development -v $GITHUB_SHA -o $FLOW_NAME.yaml
+          prefect deployment build ${{ matrix.flows }}:$FLOW_NAME --name ${{ env.PROJECT }} -q ${{ env.PROJECT }} -a -sb s3/production -v $GITHUB_SHA -o $FLOW_NAME.yaml
           echo "flow_manifest=$FLOW_NAME.yaml" >> $GITHUB_OUTPUT
 
       - name: Upload YAML deployment manifest as artifact

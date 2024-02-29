@@ -9,7 +9,7 @@ on:
         default: 'us-east-1'
         type: string
 env:
-  PROJECT: nhl-data-pipeline-dev
+  PROJECT: nhl-data-pipeline-prod
   AWS_REGION: ${{ github.event.inputs.aws-region }}
 
 jobs:
