@@ -3,7 +3,7 @@ Description: Create ECR repository and lifecycle policy
 Parameters:
   RepositoryName:
     Type: String
-    Default: nhl-data-pipeline
+    Default: nhl-data-pipeline-dev
 Resources:
   MyRepository:
     Type: AWS::ECR::Repository
