@@ -289,6 +289,8 @@ jobs:
           ls -ltr
           pwd
           cd flows && ls -ltr
+
+          # S3 Copy - Flows & Modules
           # aws s3 cp snowflake_transfer.py s3://${{ github.event.inputs.s3_path }}/snowflake_transfer.py --recursive
           # aws s3 cp flows/src/ s3://${{ github.event.inputs.s3_path }} --recursive 
       
