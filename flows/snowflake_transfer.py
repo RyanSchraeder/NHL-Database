@@ -167,7 +167,7 @@ def file_parser(source, url, snowflake_conn, year: int = dt.datetime.now().year)
 
 @task(name="s3_upload")
 @s3_conn
-def s3_parser(filename: str, data: pd.DataFrame, s3_bucket_name: str = 'nhl-data-raw'):
+def s3_parser(filename: str, data: pd.DataFrame, s3_bucket_name: str = 'nhl-data-raw', s3_folder: str):
     try:
 
         logging = get_run_logger()
@@ -189,7 +189,7 @@ def s3_parser(filename: str, data: pd.DataFrame, s3_bucket_name: str = 'nhl-data
         logging.info(f'Data stored at {path}')
 
         # Build the targets
-        dst, filename = f'{s3_bucket_name}', f'{source}/{filename}.csv'
+        dst, filename = f'{s3_bucket_name}', f'{s3_folder}/{filename}.csv'
 
         # Retrieve S3 paths & store raw file to s3
         logging.info(f'Storing parsed data in S3 at {filename}')
@@ -270,7 +270,7 @@ def nhl_snowflake_ingest(source, endpoint, year, s3_bucket_name, snowflake_conn,
         # INGEST RAW DATA TO S3
         logging.info("Extracting raw data from source, formatting and transformation, and loading it to S3")
         output_df = file_parser(source, url, snowflake_conn, year)
-        s3_parser(filename=filename, data=output_df, s3_bucket_name=s3_bucket_name)
+        s3_parser(filename=filename, data=output_df, s3_bucket_name=s3_bucket_name, s3_folder=source)
 
         # MINOR TRANSFORMATION & TRANSFER RAW DATA TO SNOWFLAKE
         # logging.info("Extracting raw data from S3 to transferred into Snowflake")
