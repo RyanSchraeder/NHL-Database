@@ -53,7 +53,7 @@ Parameters for the pipeline are established:
 ### Prefect Dashboard
 
 <p align="center">
-  <img src="/images/prefect_dashboard.png" />
+  <img src="images/prefect_dashboard.png" />
 </p>
 
 # Output Data in Snowflake
