@@ -1,5 +1,5 @@
 # NHL-Database
-Data engineering project utilizing AWS, Snowflake, Docker, Python and Prefect to build a data warehouse in Snowflake for accessibility of NHL data. 
+Data engineering project utilizing AWS ECS Fargate, CloudFormation (IaC), Snowflake, Docker, Python, SQL, and Prefect to build a data warehouse in Snowflake for accessibility of NHL data. 
 
 ## Workflow Architecture
 1. In Python, source data is retrieved from hockeyreference.com based upon an input parameter to retrieve the appropriate URL, which is then used to scrape data and transform it into tabular format (dataframe).
