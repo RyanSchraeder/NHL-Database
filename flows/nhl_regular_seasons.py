@@ -86,7 +86,7 @@ def s3_parser(filename: str, data: pd.DataFrame, s3_folder: str, s3_bucket_name:
         logging.info(f'Data stored at {path}')
 
         # Build the targets
-        dst, filename = f'{s3_bucket_name}', f'{s3_folder}/{filename}.csv'
+        dst, filename = f'{s3_bucket_name}', f'{s3_folder}/regular_season/{filename}.csv'
 
         # Retrieve S3 paths & store raw file to s3
         logging.info(f'Storing parsed data in S3 at {filename}')
