@@ -17,7 +17,6 @@ class DataTransform(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     dataframe: pd.DataFrame
-    date: dt
 
     @classmethod
     def seasons(cls, dataframe):
@@ -42,7 +41,7 @@ class DataTransform(BaseModel):
         return dataframe
 
     @classmethod
-    def teams(cls, dataframe, date):
+    def teams(cls, dataframe):
 
         print(f"Sample data for teams: {dataframe.head(1)}")
         
