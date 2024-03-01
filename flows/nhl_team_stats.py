@@ -31,7 +31,7 @@ def file_parser(source, url, snowflake_conn):
         logging = get_run_logger()
         response = get_legacy_session().get(url)
         dataframes = pd.read_html(response.text)
-        dataframe = pd.concat(dataframes, axis=0, ignore_index=True).reset_index(drop=True)
+        dataframe = pd.concat(dataframes, axis=0, ignore_index=False)
 
         logging.info(f'Retrieved data with columns: {dataframe.columns}.')
         
