@@ -2,6 +2,7 @@
 Data engineering project utilizing AWS ECS Fargate, CloudFormation (IaC), Snowflake, Docker, Python, SQL, and Prefect to build a data warehouse in Snowflake for accessibility of NHL data. 
 
 Forked from Anna Geller's Prefect template for ECS and modified to suit my needs. Check it out here for your own inspiration! https://github.com/RyanSchraeder/dataflow-ops
+
 Huge shoutout and thanks to Anna and the Prefect team for an amazing product with stellar support!
 
 ## Workflow Architecture
