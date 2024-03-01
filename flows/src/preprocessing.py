@@ -64,6 +64,9 @@ class DataTransform(BaseModel):
                 for item in row: 
                     if item < 1: 
                         row += row * 100
+
+        dataframe['updated_at'] = pendulum.now("America/Denver")
+        
         return dataframe
 
         
