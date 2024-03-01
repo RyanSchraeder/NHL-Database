@@ -33,6 +33,7 @@ def file_parser(source, url, snowflake_conn, year: int = dt.datetime.now().year)
         dataframes = pd.read_html(response.text)
         dataframe = pd.concat(dataframes, axis=0, ignore_index=True).reset_index(drop=True)
 
+        logging.info('Retrieved data with columns: {dataframe.columns}')
         logging.info('Transforming data...')
         dataframe = transform.playoffs(dataframe, year)
 
