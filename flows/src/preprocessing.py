@@ -61,10 +61,7 @@ class DataTransform(BaseModel):
                 for item in row: 
                     if item < 1: 
                         row += row * 100
-                        
-        # Output to CSV
-        team_stats_df.to_csv(os.path.join(path, 'team_stats_clean.csv'), index=False)
-        return   
+        return dataframe
 
         
     @classmethod
