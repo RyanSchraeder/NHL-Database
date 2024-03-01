@@ -45,8 +45,8 @@ class DataTransform(BaseModel):
 
         print(f"Sample data for teams: {dataframe.head(1)}")
         
-        # Team name cleaning
-        dataframe['Team'] = [str(i).replace('*', '') for i in dataframe['Unnamed: 0']]
+        # # Team name cleaning
+        # dataframe['Team'] = [str(i).replace('*', '') for i in dataframe['Unnamed: 0']]
         
         # Creating Column for Total Goals 
         dataframe['G'] = dataframe.GF + dataframe.GA 
@@ -64,7 +64,7 @@ class DataTransform(BaseModel):
                     if item < 1: 
                         row += row * 100
 
-        dataframe['updated_at'] = pendulum.now("America/Denver")
+        dataframe['updated_at'] = dt.now()
         
         return dataframe
 
