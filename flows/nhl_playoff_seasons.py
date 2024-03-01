@@ -89,7 +89,7 @@ def s3_parser(filename: str, data: pd.DataFrame, s3_folder: str, s3_bucket_name:
         logging.info(f'Data stored at {path}')
 
         # Build the targets
-        dst, filename = f'{s3_bucket_name}', f'{s3_folder}/{filename}.csv'
+        dst, filename = f'{s3_bucket_name}', f'{s3_folder}/playoff_season/{filename}.csv'
 
         # Retrieve S3 paths & store raw file to s3
         logging.info(f'Storing parsed data in S3 at {filename}')
@@ -101,7 +101,7 @@ def s3_parser(filename: str, data: pd.DataFrame, s3_folder: str, s3_bucket_name:
     except Exception as e:
         logging.error(f'An error occurred when storing data in S3: {e}')
         sys.exit(1)
-
+        
 
 @task(name="snowflake_base_model")
 def snowflake_base_model(snowflake_conn):
