@@ -23,7 +23,9 @@ transform = DataTransform
 
 
 @task(name="file_parser")
-def file_parser(source, url, snowflake_conn, year: int = dt.datetime.now().year):
+def file_parser(
+    source, url, snowflake_conn
+):
     """ Download raw source data and upload to S3
         Data Source: hockeyreference.com
     """
@@ -34,7 +36,7 @@ def file_parser(source, url, snowflake_conn, year: int = dt.datetime.now().year)
         dataframe = pd.concat(dataframes, axis=0, ignore_index=True).reset_index(drop=True)
 
         logging.info('Transforming data...')
-        dataframe = transform.seasons(dataframe, year)
+        dataframe = transform.seasons(dataframe)
 
         logging.info('Checking column mappings...')
         checks = snowflake_query_exec(snowflake_checks('regular_season'), method=snowflake_conn)
@@ -150,7 +152,7 @@ def nhl_regular_seasons(source, endpoint, year, s3_bucket_name, snowflake_conn, 
     if env == "development":
         try:
             logging.info("Extracting raw data from source, formatting and transformation, and loading it to S3")
-            file_parser(source, url, snowflake_conn, year)
+            file_parser(source, url, snowflake_conn)
             logging.info(
                 "\n"
                 "\t Process executed successfully in development. "
@@ -166,7 +168,7 @@ def nhl_regular_seasons(source, endpoint, year, s3_bucket_name, snowflake_conn, 
     else:
         # INGEST RAW DATA TO S3
         logging.info("Extracting raw data from source, formatting and transformation, and loading it to S3")
-        output_df = file_parser(source, url, snowflake_conn, year)
+        output_df = file_parser(source, url, snowflake_conn)
         s3_parser(filename=filename, data=output_df, s3_folder=source, s3_bucket_name=s3_bucket_name)
 
         # MINOR TRANSFORMATION & TRANSFER RAW DATA TO SNOWFLAKE
