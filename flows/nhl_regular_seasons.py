@@ -7,126 +7,25 @@ import sys
 import os
 import boto3
 
-from src.connectors import get_snowflake_connection, s3_conn
-from src.connectors import get_legacy_session
-from snowflake.connector import ProgrammingError
+from src.connectors import s3_conn, get_legacy_session
 from src.snowflake_queries import *
 from src.preprocessing import DataTransform
 
+from src.helpers import setup, snowflake_query_exec 
+
 # Orchestration
 from prefect import flow, task, get_run_logger
-from prefect_snowflake import SnowflakeCredentials, SnowflakeConnector
 
 # Data Source: https://www.hockey-reference.com/leagues/NHL_2022.html ##
 
 # Data transformations
 transform = DataTransform
 
-# Prefect Snowflake Connector
-credentials = SnowflakeCredentials.load("development")
-
-def snowflake_query_exec(queries, method: str = 'standard'):
-    logging = get_run_logger()
-    try:
-        # Cursor & Connection
-        conn = get_snowflake_connection(method)
-        logging.info(f"Snowflake connection established: {conn}")
-        
-        response = {}
-        
-        if conn:
-            curs = conn.cursor()
-        
-            # Retrieve formatted queries and execute - Snowflake Connector Form. Async
-            for idx, query in queries.items():
-                curs.execute_async(query)
-                query_id = curs.sfqid
-                logging.info(f'Query added to queue: {query_id}')
-        
-                curs.get_results_from_sfqid(query_id)
-        
-                # IF THE SNOWFLAKE QUERY RETURNS DATA, STORE IT. ELSE, CONTINUE PROCESS.
-                result = curs.fetchone()
-                df = curs.fetch_pandas_all()
-        
-                if result:
-                    logging.info(f'Query completed successfully and stored: {query_id}')
-                    response[idx] = result[0]
-                    if len(df):
-                        return df
-        
-                while conn.is_still_running(conn.get_query_status_throw_if_error(query_id)):
-                    logging.info(f'Awaiting query completion for {query_id}')
-                    time.sleep(1)
-        
-                return response
-        
-        if not conn:
-            # Retrieve formatted queries and execute - Fallback: Prefect Snowflake Connector. Sync
-            logging.warning(f"Snowflake cursor is empty! Attempting Prefect Connector.")
-
-            with SnowflakeConnector.load("development") as cnx:
-                for idx, query in queries.items():
-                    while True:
-                        
-                        logging.info(
-                            f"""
-                            Executing Query: \n'
-                            \t\t{query}\n
-                            """
-                        )
-                        result = cnx.fetch_one(query)
-                        # full_result = cnx.fetch_all()
-                        
-                        logging.info(f'Query Result from Prefect Snowflake: {result}')
-                        
-                        if result:
-                            logging.info(f'Query completed successfully and stored: {query}')
-                            response[idx] = result[0]
-                            if len(result):
-                                return result
-
-    except ProgrammingError as err:
-        logging.error(f'Programming Error: {err}')
-
-
-@task(name="setup")
-def setup(
-    source: str,
-    endpoint: str = "https://www.hockey-reference.com/leagues/",
-    year: int = dt.datetime.now().year
-):
-    logging = get_run_logger()
-    logging.info(f'Received endpoint {endpoint} for source {source} and year {year}.')
-    
-    # Build endpoint URL & Filenames
-    paths = ('seasons', 'playoffs', 'teams')
-    if source in paths:
-        if source == 'seasons':
-            url = f"{endpoint}NHL_{year}_games.html#games"
-            filename = f"NHL_{year}_regular_season"
-        elif source == 'playoffs':
-            url = f"{endpoint}NHL_{year}_games.html#games_playoffs"
-            filename = f"NHL_{year}_playoff_season"
-        elif source == 'teams':
-            url = f"{endpoint}NHL_{year}.html#stats"
-            filename = f"NHL_{year}_team_stats"
-        else:
-            pass
-    else:
-        logging.error(f'Invalid source specified: {source}')
-        sys.exit(1)
-
-    logging.info(f"URL Built: {url}\nDestination Filename: {filename}")
-    return url, filename
-
 
 @task(name="file_parser")
 def file_parser(source, url, snowflake_conn, year: int = dt.datetime.now().year):
     """ Download raw source data and upload to S3
         Data Source: hockeyreference.com
-
-        TODO: Complete teams statistics and playoff record transformations
     """
     try:
         logging = get_run_logger()
@@ -134,24 +33,22 @@ def file_parser(source, url, snowflake_conn, year: int = dt.datetime.now().year)
         dataframes = pd.read_html(response.text)
         dataframe = pd.concat(dataframes, axis=0, ignore_index=True).reset_index(drop=True)
 
-        if source == 'seasons':
+        logging.info('Transforming data...')
+        dataframe = transform.seasons(dataframe, year)
 
-            logging.info('Transforming data...')
-            dataframe = transform.seasons(dataframe, year)
+        logging.info('Checking column mappings...')
+        checks = snowflake_query_exec(snowflake_checks('regular_season'), method=snowflake_conn)
+        len_source, len_dest = len(dataframe.columns), len(checks)
 
-            logging.info('Checking column mappings...')
-            checks = snowflake_query_exec(snowflake_checks('regular_season'), method=snowflake_conn)
-            len_source, len_dest = len(dataframe.columns), len(checks)
+        logging.info(
+            f'Destination mappings: {len_dest}'
+            '\n'
+            f'Source mappings: {len_source}'
+        )
 
-            logging.info(
-                f'Destination mappings: {len_dest}'
-                '\n'
-                f'Source mappings: {len_source}'
-            )
-
-            if not len_dest == len_source:
-                logging.error('Length of source columns does not match number of destination columns.')
-                sys.exit(1)
+        if not len_dest == len_source:
+            logging.error('Length of source columns does not match number of destination columns.')
+            sys.exit(1)
 
         logging.info(
             f'Retrieved data with columns: {dataframe.columns}'
