@@ -17,13 +17,6 @@ class DataTransform(BaseModel):
 
     dataframe: pd.DataFrame
     date: dt
-    away_teams: Optional[List[str]]
-    home_teams: Optional[List[str]]
-    away_goals: Optional[int]
-    home_goals: Optional[int]
-    away_outcome: Optional[int]
-    home_outcome: Optional[int]
-    length_of_game_min: Optional[int]
 
     @classmethod
     def seasons(cls, dataframe, date):
@@ -47,6 +40,33 @@ class DataTransform(BaseModel):
 
         return dataframe
 
+    @classmethod
+    def playoffs(cls, dataframe, date):
+        
+        # Team name cleaning
+        dataframe['Team'] = [str(i).replace('*', '') for i in dataframe['Team']]
+        
+        # Creating Column for Total Goals 
+        dataframe['G'] = dataframe.GF + dataframe.GA 
+        
+        # Creating Column for Total Power-Play Goals 
+        dataframe['PPG'] = dataframe.PP + dataframe.PPA
+        
+        # Creating Column for Total Games in Shootouts
+        dataframe['SHOOTOUTS'] = dataframe.SOW + dataframe.SOL
+
+        # Converts percentages
+        for column, row in dataframe.iteritems(): 
+            if '%' in column:
+                for item in row: 
+                    if item < 1: 
+                        row += row * 100
+                        
+        # Output to CSV
+        team_stats_df.to_csv(os.path.join(path, 'team_stats_clean.csv'), index=False)
+        return   
+
+        
     @classmethod
     def add_fake_data(
         cls, dataframe, date, away_teams, home_teams,
