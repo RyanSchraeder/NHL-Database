@@ -42,9 +42,11 @@ class DataTransform(BaseModel):
 
     @classmethod
     def teams(cls, dataframe, date):
+
+        print(f"Sample data for teams: {dataframe.head(1)}")
         
         # Team name cleaning
-        dataframe['Team'] = [str(i).replace('*', '') for i in dataframe['Team']]
+        dataframe['Team'] = [str(i).replace('*', '') for i in dataframe['Unnamed: 0']]
         
         # Creating Column for Total Goals 
         dataframe['G'] = dataframe.GF + dataframe.GA 
@@ -89,7 +91,7 @@ class DataTransform(BaseModel):
             return result
         except Exception as e:
             if e == ValidationError:
-                logger.error(f'Validation of data failed. Context: {e}')
+                print(f'Validation of data failed. Context: {e}')
 
     @classmethod
     def encoding_full(
