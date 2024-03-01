@@ -44,7 +44,7 @@ on:
         type: string
 
 env:
-  PROJECT: nhl-data-pipeline-prod
+  PROJECT: nhl-data-pipeline-dev
   ECR_REPOSITORY: nhl-data-pipeline-dev        # set this to your Amazon ECR repository name
   ECS_CLUSTER: nhl-data-pipeline-dev                 # set this to your Amazon ECS cluster name
   BLOCK: ${{ github.event.inputs.block_name }}
