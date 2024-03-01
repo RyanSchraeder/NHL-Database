@@ -97,14 +97,12 @@ def snowflake_schema():
         "playoff_season": """
             create table if not exists playoff_season (
                 date date,
-                away_team varchar(100),
+                away_team_id varchar(100),
                 away_goals integer,
-                home_team varchar(100),
+                home_team_id varchar(100),
                 home_goals integer,
-                length_of_game_min integer,
-                away_outcome integer,
-                home_outcome integer,
-                updated_at varchar(100)
+                length_of_game_min varchar(100),
+                updated_at date
             )
         """
     }
