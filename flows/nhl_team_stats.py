@@ -200,7 +200,7 @@ if __name__ in "__main__":
     endpoint = args.endpoint if args.endpoint is not None else ""
     year = args.year if args.year is not None else ""
 
-    # Example S3 URI : s3://nhl-data-raw/season/playoff_season.csv
+    # Example S3 URI : s3://nhl-data-raw/teams/team_stats.csv
     s3_bucket_name = args.s3_bucket_name if args.s3_bucket_name is not None else ""
     snowflake_conn = args.snowflake_conn if args.snowflake_conn is not None else ""
     env = args.env if args.env is not None else "development"
