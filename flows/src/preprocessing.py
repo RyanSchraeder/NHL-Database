@@ -29,7 +29,7 @@ class DataTransform(BaseModel):
             ['date', 'away_team_id', 'away_goals', 'home_team_id', 'home_goals', 'length_of_game_min']
         ]
 
-        dataframe['updated_at'] = dt.datetime.now()
+        dataframe['updated_at'] = dt.now()
 
         # Transforming data
         dataframe['length_of_game_min'] = dataframe['length_of_game_min'].apply(
