@@ -131,9 +131,9 @@ def snowflake_load(table, year, source, snowflake_conn):
 
 
 @flow(
-    name='nhl_snowflake_ingest', retries=1, retry_delay_seconds=5, log_prints=True
+    name='nhl_playoff_seasons', retries=1, retry_delay_seconds=5, log_prints=True
 )
-def nhl_snowflake_ingest(source, endpoint, year, s3_bucket_name, snowflake_conn, env):
+def nhl_playoff_seasons(source, endpoint, year, s3_bucket_name, snowflake_conn, env):
     start = time.time()
     logging = get_run_logger()
 
@@ -205,4 +205,4 @@ if __name__ in "__main__":
     print(f"Received Arguments: {args}")
     
     # Execute the pipeline
-    nhl_snowflake_ingest(source, endpoint, year, s3_bucket_name, snowflake_conn, env)
+    nhl_playoff_seasons(source, endpoint, year, s3_bucket_name, snowflake_conn, env)
