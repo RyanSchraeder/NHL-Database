@@ -23,7 +23,7 @@ def snowflake_stages():
             -- CREDENTIALS = ''
             FILE_FORMAT = parquet
         """
-}
+    }
 
 
 def snowflake_checks(table):
@@ -110,40 +110,36 @@ def snowflake_schema():
     }
 
 
-def snowflake_cleanup(load_year):
+def snowflake_cleanup(table, load_year):
     print(
         f"""
-            Cleaning up data with query: \n
-            DELETE FROM regular_season
-            WHERE date like '{load_year}%'
-        """
+        Cleaning up data with query: \n
+        DELETE FROM {table}
+        WHERE date like '{load_year}%'
+         """
     )
-    return {
-        "dedupe_regular_seasons": f"""
-            DELETE FROM regular_season
-            WHERE date like '{load_year}%'
-        """
+    queries = {
+        "dedupe": f"""
+               DELETE FROM  {table}
+               WHERE date like '{load_year}%'
+           """
     }
 
+    return queries
 
-def snowflake_ingestion():
-    print(
-        """
-        Processing query to ingest data from S3 to Snowflake: 
-    
-        COPY INTO regular_season
-        FROM @nhl_raw_data_csv/season
-        FILE_FORMAT = csv
-        PATTERN = '.*csv.*';
-        """
-    )
 
-    return {
-        # REGULAR SEASON DATA CLEAN. USES THE S3 INTEGRATION STAGE FOR THE S3 RAW DATA.
-        "reg_season_raw": """
-                COPY INTO regular_season
-                FROM @nhl_raw_data_csv/season
-                FILE_FORMAT = csv
-                PATTERN = '.*csv.*';
+def snowflake_ingestion(table, source):
+    print(f"Processing query to ingest data from S3 to Snowflake: {table}")
+
+    # REGULAR SEASON DATA CLEAN. USES THE S3 INTEGRATION STAGE FOR THE S3 RAW DATA.
+    queries = {
+        "ingest_from_stage": f"""
+            COPY INTO {table}
+            FROM @nhl_raw_data_csv/{source}/{table}
+            FILE_FORMAT = csv
+            PATTERN = '.*csv.*';
         """
     }
+    print(f"Query for ingestion from stage: \n\t{queries['ingest_from_stage']}")
+
+    return queries
