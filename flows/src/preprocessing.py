@@ -41,7 +41,7 @@ class DataTransform(BaseModel):
         return dataframe
 
     @classmethod
-    def playoffs(cls, dataframe, date):
+    def teams(cls, dataframe, date):
         
         # Team name cleaning
         dataframe['Team'] = [str(i).replace('*', '') for i in dataframe['Team']]
