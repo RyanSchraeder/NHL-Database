@@ -104,7 +104,7 @@ jobs:
 
       - name: Prefect Dry-Run
         run: |
-          python3 flows/snowflake_transfer.py seasons --env development
+          python3 flows/nhl_regular_seasons.py seasons --env development
           echo "Current working directory"
           pwd
 
@@ -291,7 +291,7 @@ jobs:
           cd flows && ls -ltr
 
           # S3 Copy - Flows & Modules
-          # aws s3 cp snowflake_transfer.py s3://${{ github.event.inputs.s3_path }}/snowflake_transfer.py --recursive
+          # aws s3 cp nhl_regular_seasons.py s3://${{ github.event.inputs.s3_path }}/nhl_regular_seasons.py --recursive
           # aws s3 cp flows/src/ s3://${{ github.event.inputs.s3_path }} --recursive 
       
   deploy:
@@ -330,8 +330,8 @@ jobs:
         id: build
         run: |
           echo " Command for prefect deploy:  "
-          echo "prefect deployment build flows/snowflake_transfer.py:nhl_snowflake_ingest -sb s3/$BLOCK -q $PROJECT -v $GITHUB_SHA -a -t $PROJECT -n $PROJECT -o nhl_snowflake_ingest.yaml -ib ecs-task/$BLOCK --skip-upload"
-          prefect deployment build flows/snowflake_transfer.py:nhl_snowflake_ingest -sb s3/$BLOCK -q $PROJECT -v $GITHUB_SHA -a -t $PROJECT -n $PROJECT -o nhl_snowflake_ingest.yaml -ib ecs-task/$BLOCK --skip-upload > $PROJECT.yaml
+          echo "prefect deployment build flows/nhl_regular_seasons.py:nhl_snowflake_ingest -sb s3/$BLOCK -q $PROJECT -v $GITHUB_SHA -a -t $PROJECT -n $PROJECT -o nhl_snowflake_ingest.yaml -ib ecs-task/$BLOCK --skip-upload"
+          prefect deployment build flows/nhl_regular_seasons.py:nhl_snowflake_ingest -sb s3/$BLOCK -q $PROJECT -v $GITHUB_SHA -a -t $PROJECT -n $PROJECT -o nhl_snowflake_ingest.yaml -ib ecs-task/$BLOCK --skip-upload > $PROJECT.yaml
           # prefect deployment schedule create --cron 30 17 * * 7 America/Denver
           echo "flow_manifest=$FLOW_NAME.yaml" >> $GITHUB_OUTPUT
           # echo ::set-output name=flow_manifest::$FLOW_NAME.yaml
