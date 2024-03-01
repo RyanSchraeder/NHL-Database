@@ -37,7 +37,8 @@ def file_parser(
 
         logging.info('Transforming data...')
         dataframe = transform.seasons(dataframe)
-
+        logging.info(f'Transformation Successful: \n\t\t{dataframe.head(5)}')
+        
         logging.info('Checking column mappings...')
         checks = snowflake_query_exec(snowflake_checks('regular_season'), method=snowflake_conn)
         len_source, len_dest = len(dataframe.columns), len(checks)
