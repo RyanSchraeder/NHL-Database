@@ -133,7 +133,7 @@ def snowflake_ingestion(table, source):
     queries = {
         "ingest_from_stage": f"""
             COPY INTO {table}
-            FROM @nhl_raw_data_csv/{source}/{table}
+            FROM @nhl_raw_data_csv/{source}/
             FILE_FORMAT = csv
             PATTERN = '.*csv.*';
         """
