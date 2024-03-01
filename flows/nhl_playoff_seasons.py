@@ -35,7 +35,7 @@ def file_parser(source, url, snowflake_conn, year: int = dt.datetime.now().year)
 
         logging.info('Retrieved data with columns: {dataframe.columns}')
         logging.info('Transforming data...')
-        dataframe = transform.playoffs(dataframe, year)
+        dataframe = transform.seasons(dataframe, year)
 
         logging.info('Checking column mappings...')
         checks = snowflake_query_exec(snowflake_checks('playoff_season'), method=snowflake_conn)
