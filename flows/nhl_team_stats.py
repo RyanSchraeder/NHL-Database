@@ -23,7 +23,7 @@ transform = DataTransform
 
 
 @task(name="file_parser")
-def file_parser(source, url, snowflake_conn, year: int = dt.datetime.now().year):
+def file_parser(source, url, snowflake_conn):
     """ Download raw source data and upload to S3
         Data Source: hockeyreference.com
     """
@@ -36,11 +36,11 @@ def file_parser(source, url, snowflake_conn, year: int = dt.datetime.now().year)
         logging.info(f'Retrieved data with columns: {dataframe.columns}.')
         
         logging.info('Transforming data...')
-        dataframe = transform.teams(dataframe, year)
+        dataframe = transform.teams(dataframe)
 
         logging.info('Checking column mappings...')
         checks = snowflake_query_exec(snowflake_checks('team_stats'), method=snowflake_conn)
-        logging.info(f'Expected columns from destnation: {checks}')
+        logging.info(f'Expected columns from destination: {checks}')
         len_source, len_dest = len(dataframe.columns), len(checks)
 
         logging.info(
@@ -153,7 +153,7 @@ def nhl_team_stats(source, endpoint, year, s3_bucket_name, snowflake_conn, env):
     if env == "development":
         try:
             logging.info("Extracting raw data from source, formatting and transformation, and loading it to S3")
-            file_parser(source, url, snowflake_conn, year)
+            file_parser(source, url, snowflake_conn)
             logging.info(
                 "\n"
                 "\t Process executed successfully in development. "
@@ -169,7 +169,7 @@ def nhl_team_stats(source, endpoint, year, s3_bucket_name, snowflake_conn, env):
     else:
         # INGEST RAW DATA TO S3
         logging.info("Extracting raw data from source, formatting and transformation, and loading it to S3")
-        output_df = file_parser(source, url, snowflake_conn, year)
+        output_df = file_parser(source, url, snowflake_conn)
         s3_parser(filename=filename, data=output_df, s3_folder=source, s3_bucket_name=s3_bucket_name)
 
         # MINOR TRANSFORMATION & TRANSFER RAW DATA TO SNOWFLAKE
