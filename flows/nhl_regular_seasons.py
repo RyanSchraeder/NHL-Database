@@ -116,16 +116,16 @@ def snowflake_base_model(snowflake_conn):
 
 
 @task(name="snowflake_load")
-def snowflake_load(year, snowflake_conn):
+def snowflake_load(table, year, source, snowflake_conn):
     logging = get_run_logger()
 
     # DEDUPE FROM SNOWFLAKE
     logging.info(f"Deduplicating yearly record data to refresh the schedule")
-    snowflake_query_exec(snowflake_cleanup(year), method=snowflake_conn)
+    snowflake_query_exec(snowflake_cleanup(table, year), method=snowflake_conn)
 
     # INGEST RAW DATA TO SNOWFLAKE
     logging.info(f"Updating yearly record data")
-    snowflake_query_exec(snowflake_ingestion(), method=snowflake_conn)
+    snowflake_query_exec(snowflake_ingestion(table, source), method=snowflake_conn)
 
     return
 
@@ -171,7 +171,7 @@ def nhl_snowflake_ingest(source, endpoint, year, s3_bucket_name, snowflake_conn,
 
         # MINOR TRANSFORMATION & TRANSFER RAW DATA TO SNOWFLAKE
         # logging.info("Extracting raw data from S3 to transferred into Snowflake")
-        snowflake_load(year, snowflake_conn)
+        snowflake_load('regular_season', year, source, snowflake_conn)
 
     end = time.time() - start
     logging.info(f'Process Completed. Time elapsed: {end}')
