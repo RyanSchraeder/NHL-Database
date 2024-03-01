@@ -7,7 +7,6 @@ import warnings
 from pydantic import BaseModel, ValidationError, ConfigDict
 from typing import Optional, List
 from datetime import datetime as dt
-import pendulum
 
 # Suppress FutureWarning messages
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -17,6 +16,7 @@ class DataTransform(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     dataframe: pd.DataFrame
+    date: dt
 
     @classmethod
     def seasons(cls, dataframe):
@@ -29,7 +29,7 @@ class DataTransform(BaseModel):
             ['date', 'away_team_id', 'away_goals', 'home_team_id', 'home_goals', 'length_of_game_min']
         ]
 
-        dataframe['updated_at'] = pendulum.now("America/Denver")
+        dataframe['updated_at'] = dt.datetime.now()
 
         # Transforming data
         dataframe['length_of_game_min'] = dataframe['length_of_game_min'].apply(
