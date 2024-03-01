@@ -133,7 +133,7 @@ def snowflake_load(table, year, source, snowflake_conn):
 @flow(
     name='nhl_regular_seasons', retries=1, retry_delay_seconds=5, log_prints=True
 )
-def nhl_snowflake_ingest(source, endpoint, year, s3_bucket_name, snowflake_conn, env):
+def nhl_regular_seasons(source, endpoint, year, s3_bucket_name, snowflake_conn, env):
     start = time.time()
     logging = get_run_logger()
 
