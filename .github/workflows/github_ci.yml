@@ -329,10 +329,14 @@ jobs:
       - name: Deploy flows to S3
         id: build
         run: |
-          echo " Command for prefect deploy:  "
+          echo " Command for prefect deploy Flow:  nhl_regular_seasons"
           echo "prefect deployment build flows/nhl_regular_seasons.py:nhl_snowflake_ingest -sb s3/$BLOCK -q $PROJECT -v $GITHUB_SHA -a -t $PROJECT -n $PROJECT -o nhl_snowflake_ingest.yaml -ib ecs-task/$BLOCK --skip-upload"
           prefect deployment build flows/nhl_regular_seasons.py:nhl_snowflake_ingest -sb s3/$BLOCK -q $PROJECT -v $GITHUB_SHA -a -t $PROJECT -n $PROJECT -o nhl_snowflake_ingest.yaml -ib ecs-task/$BLOCK --skip-upload > $PROJECT.yaml
-          # prefect deployment schedule create --cron 30 17 * * 7 America/Denver
+          
+          echo " Command for prefect deploy Flow:  nhl_playoff_seasons"
+          echo "prefect deployment build flows/nhl_playoff_seasons.py:nhl_snowflake_ingest -sb s3/$BLOCK -q $PROJECT -v $GITHUB_SHA -a -t $PROJECT -n $PROJECT -o nhl_snowflake_ingest.yaml -ib ecs-task/$BLOCK --skip-upload"
+          prefect deployment build flows/nhl_playoff_seasons.py:nhl_snowflake_ingest -sb s3/$BLOCK -q $PROJECT -v $GITHUB_SHA -a -t $PROJECT -n $PROJECT -o nhl_snowflake_ingest.yaml -ib ecs-task/$BLOCK --skip-upload > $PROJECT.yaml
+         
           echo "flow_manifest=$FLOW_NAME.yaml" >> $GITHUB_OUTPUT
           # echo ::set-output name=flow_manifest::$FLOW_NAME.yaml
 
