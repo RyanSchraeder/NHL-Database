@@ -66,6 +66,4 @@ Parameters for the pipeline are established:
  and stored in a separate table for identification
 
 #### Team Statistics
-<p align="center">
-  <img src="/images/" />
-</p>
+![image](https://github.com/RyanSchraeder/NHL-Database/assets/30241666/caad70a2-b948-454f-a49c-31e75f6f356a)
