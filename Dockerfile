@@ -13,4 +13,4 @@ RUN ls -ltr
 RUN prefect block register -m prefect_aws.ecs
 
 # Run our flow script when the container starts
-CMD ["python", "flows/snowflake_transfer.py", "seasons"]
+CMD ["python", "flows/nhl_regular_seasons.py", "seasons"]
