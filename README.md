@@ -61,10 +61,17 @@ Parameters for the pipeline are established:
 </p>
 
 # Output Data in Snowflake
-## TBD: Playoffs, Teams, Players, Stanley Cup Final
+
 ### Seasonal Games
 <p align="center">
   <img src="/images/snowflake_regular_season.png" />
+</p>
+ - Playoffs are the same, just games ingested in the playoff season
+ and stored in a separate table for identification
+
+#### Team Statistics
+<p align="center">
+  <img src="/images/" />
 </p>
 
 # Why Not Airflow? 
