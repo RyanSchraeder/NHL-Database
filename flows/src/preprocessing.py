@@ -3,6 +3,7 @@
 # Accepts JSON data from S3 files and creates a final dataframe.
 
 import pandas as pd
+import numpy as np
 import warnings
 from pydantic import BaseModel, ValidationError, ConfigDict
 from typing import Optional, List
@@ -45,24 +46,10 @@ class DataTransform(BaseModel):
 
         print(f"Sample data for teams: {dataframe.head(1)}")
         
-        # # Team name cleaning
-        # dataframe['Team'] = [str(i).replace('*', '') for i in dataframe['Unnamed: 0']]
-        
-        # Creating Column for Total Goals 
-        dataframe['G'] = dataframe.GF + dataframe.GA 
-        
-        # Creating Column for Total Power-Play Goals 
-        dataframe['PPG'] = dataframe.PP + dataframe.PPA
-        
-        # Creating Column for Total Games in Shootouts
-        dataframe['SHOOTOUTS'] = dataframe.SOW + dataframe.SOL
-
-        # Converts percentages
-        for column, row in dataframe.iteritems(): 
-            if '%' in column:
-                for item in row: 
-                    if item < 1: 
-                        row += row * 100
+        # Team name cleaning
+        filter = ['Central Division', 'Atlantic Division', 'Pacific Division', 'Metropolitan Division']
+        dataframe.rename(columns=({'Unnamed: 0': 'Team'}), inplace=True)
+        dataframe = dataframe[~(dataframe['Team'].isin(filter))]
 
         dataframe['updated_at'] = dt.now()
         

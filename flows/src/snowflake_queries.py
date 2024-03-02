@@ -37,52 +37,26 @@ def snowflake_checks(table):
 
 def snowflake_schema():
     return {
-        "raw_team_stats": """
-            create table if not exists raw_team_stats
-            (
-                Rk integer,
-                Team varchar(100),
-                AvAge integer,
-                GP integer,
-                W integer,
-                L integer,
-                OL integer,
-                PTS integer,
-                PTS_PERC float,
-                GF integer,
-                GA integer,
-                SOW integer,
-                SOL integer,
-                SRS integer,
-                SOS integer,
-                GFVG integer,
-                GAVG integer,
-                PP integer,
-                PPO integer,
-                PP_PERC float,
-                PPA integer,
-                PPOA integer,
-                PK_PERC float,
-                SH integer,
-                SHA integer,
-                PIMVG integer,
-                oPIMVG integer,
-                S integer,
-                S_PERC float,
-                SA integer,
-                SV_PERC float,
-                SO integer, 
+        "team_stats": """
+            create or replace table team_stats (
+                Team VARCHAR,
+                GP VARCHAR,
+                W VARCHAR,
+                L VARCHAR,
+                OL VARCHAR,
+                PTS VARCHAR,
+                "PTS%" VARCHAR,
+                GF VARCHAR,
+                GA VARCHAR,
+                SRS VARCHAR,
+                SOS VARCHAR,
+                "RPt%" VARCHAR,
+                RW VARCHAR,
+                RgRec VARCHAR,
+                "RgPt%" VARCHAR,
                 updated_at date
             )
         """,
-        # "teams": """
-        #     create table if not exists teams (
-        #         team_id autoincrement start 1 increment 1,
-        #         team_name varchar(100),
-        #         city varchar(100),
-        #         state varchar(100)
-        #     )
-        # """,
         "regular_season": """
             create table if not exists regular_season (
                 date date,
