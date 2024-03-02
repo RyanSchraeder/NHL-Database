@@ -65,4 +65,37 @@ Parameters for the pipeline are established:
  and stored in a separate table for identification
 
 #### Team Statistics
-![image](https://github.com/RyanSchraeder/NHL-Database/assets/30241666/caad70a2-b948-454f-a49c-31e75f6f356a)
+<p align="center">
+  <img src="/images/" />
+</p>
+
+# Why Not Airflow? 
+
+#### Short Answer: *Saving 8.5x+ the Cost With Prefect!*
+- Additionally, Prefect provides robust integration with existing code to enable smooth application of my custom modules, tests, and configurations without the pain of refactoring to suit Airflow hooks, plugins, etc. 
+- Connectivity is seamless and completely customizable with Prefect Blocks
+- Workflow is efficient with local testing thanks to Prefect Cloud
+
+
+### Airflow Cost Vs. Prefect Architecture:
+
+_Airflow_
+
+<p align="center">
+  <img src="/images/with_airflow.png" />
+</p>
+
+_Prefect_
+
+<p align="center">
+  <img src="/images/no_airflow.png" />
+</p>
+
+
+
+#### WIP
+1. Finish the ingestion sources with different Prefect flows
+2. Establish data models and transformation in the next phase within dbt Cloud
+3. Utilize data to build a Streamlit dashboard via Snowflake
+4. Utilize data to productionalize the initial Stanley Cup Predictions model
+5. Explore streaming architecture possibilities for realtime predictions
