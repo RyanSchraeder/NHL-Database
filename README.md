@@ -1,10 +1,6 @@
 # NHL-Database
 Data engineering project utilizing AWS ECS Fargate, CloudFormation (IaC), Snowflake, Docker, Python, SQL, and Prefect to build a data warehouse in Snowflake for accessibility of NHL data. 
 
-Forked from Anna Geller's Prefect template for ECS and modified to suit my needs. Check it out here for your own inspiration! https://github.com/RyanSchraeder/dataflow-ops
-
-Huge shoutout and thanks to Anna and the Prefect team for an amazing product with stellar support!
-
 ## Workflow Architecture
 1. In Python, source data is retrieved from hockeyreference.com based upon an input parameter to retrieve the appropriate URL, which is then used to scrape data and transform it into tabular format (dataframe).
 2. The capability of the application involves source checks on columns, minor transformations into correct data types, logging, and schema definition. The schemas and Snowflake Stages are updated to appropriate structure to prepare acceptance of incoming data later on.
@@ -56,11 +52,10 @@ Parameters for the pipeline are established:
 
 ### Prefect Dashboard
 
-<p align="center">
-  <img src="images/prefect_deployment_dashboard.png" />
-</p>
+![image](https://github.com/RyanSchraeder/NHL-Database/assets/30241666/00f739ae-cb1f-4c70-9b35-2b3c71e7d288)
 
-# Output Data in Snowflake
+
+## Output Data in Snowflake 
 
 ### Seasonal Games
 <p align="center">

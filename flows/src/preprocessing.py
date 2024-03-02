@@ -3,6 +3,7 @@
 # Accepts JSON data from S3 files and creates a final dataframe.
 
 import pandas as pd
+import numpy as np
 import warnings
 from pydantic import BaseModel, ValidationError, ConfigDict
 from typing import Optional, List
@@ -17,16 +18,9 @@ class DataTransform(BaseModel):
 
     dataframe: pd.DataFrame
     date: dt
-    away_teams: Optional[List[str]]
-    home_teams: Optional[List[str]]
-    away_goals: Optional[int]
-    home_goals: Optional[int]
-    away_outcome: Optional[int]
-    home_outcome: Optional[int]
-    length_of_game_min: Optional[int]
 
     @classmethod
-    def seasons(cls, dataframe, date):
+    def seasons(cls, dataframe):
 
         dataframe = dataframe.rename(columns=({
             'Date': 'date', 'Visitor': 'away_team_id', 'Home': 'home_team_id', 'G': 'away_goals', 'G.1': 'home_goals',
@@ -36,7 +30,7 @@ class DataTransform(BaseModel):
             ['date', 'away_team_id', 'away_goals', 'home_team_id', 'home_goals', 'length_of_game_min']
         ]
 
-        dataframe['updated_at'] = date
+        dataframe['updated_at'] = dt.now()
 
         # Transforming data
         dataframe['length_of_game_min'] = dataframe['length_of_game_min'].apply(
@@ -47,6 +41,21 @@ class DataTransform(BaseModel):
 
         return dataframe
 
+    @classmethod
+    def teams(cls, dataframe):
+
+        print(f"Sample data for teams: {dataframe.head(1)}")
+        
+        # Team name cleaning
+        filter = ['Central Division', 'Atlantic Division', 'Pacific Division', 'Metropolitan Division']
+        dataframe.rename(columns=({'Unnamed: 0': 'Team'}), inplace=True)
+        dataframe = dataframe[~(dataframe['Team'].isin(filter))]
+
+        dataframe['updated_at'] = dt.now()
+        
+        return dataframe
+
+        
     @classmethod
     def add_fake_data(
         cls, dataframe, date, away_teams, home_teams,
@@ -72,7 +81,7 @@ class DataTransform(BaseModel):
             return result
         except Exception as e:
             if e == ValidationError:
-                logger.error(f'Validation of data failed. Context: {e}')
+                print(f'Validation of data failed. Context: {e}')
 
     @classmethod
     def encoding_full(
