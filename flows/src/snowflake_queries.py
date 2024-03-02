@@ -38,7 +38,7 @@ def snowflake_checks(table):
 def snowflake_schema():
     return {
         "team_stats": """
-            create or replace table team_stats (
+            create table if not exists team_stats (
                 Team VARCHAR,
                 GP VARCHAR,
                 W VARCHAR,
