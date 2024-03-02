@@ -52,9 +52,8 @@ Parameters for the pipeline are established:
 
 ### Prefect Dashboard
 
-<p align="center">
-  <img src="images/prefect_dashboard.png" />
-</p>
+![image](https://github.com/RyanSchraeder/NHL-Database/assets/30241666/00f739ae-cb1f-4c70-9b35-2b3c71e7d288)
+
 
 ## Output Data in Snowflake 
 
