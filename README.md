@@ -90,12 +90,3 @@ _Prefect_
 <p align="center">
   <img src="/images/no_airflow.png" />
 </p>
-
-
-
-#### WIP
-1. Finish the ingestion sources with different Prefect flows
-2. Establish data models and transformation in the next phase within dbt Cloud
-3. Utilize data to build a Streamlit dashboard via Snowflake
-4. Utilize data to productionalize the initial Stanley Cup Predictions model
-5. Explore streaming architecture possibilities for realtime predictions
