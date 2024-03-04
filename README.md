@@ -14,7 +14,7 @@ Parameters for the pipeline are established:
 
 | Argument | Description |
 | -------- | ----------- |
-| source   | Form of data you wish to load. Varies by "seasons" for regular season, "playoffs" for the playoff season, and "teams" for team statistics. |
+| source   | Form of data you wish to load. Varies by "seasons" for regular season and "teams" for team statistics. |
 | endpoint | The endpoint to request data from. This defaults to the regular season, but will be changed based upon the `source` provided. | 
 | year | Year of which to process data. Defaults to the current year at runtime |
 | s3_bucket_name | The name of the S3 Bucket location for storage of the output data. Defaults to the `nhl-data-raw` storage location and directory based upon `source` | 
@@ -61,8 +61,6 @@ Parameters for the pipeline are established:
 <p align="center">
   <img src="/images/snowflake_regular_season.png" />
 </p>
- - Playoffs are the same, just games ingested in the playoff season
- and stored in a separate table for identification
 
 #### Team Statistics
 <p align="center">
