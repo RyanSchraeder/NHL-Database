@@ -1,44 +1,57 @@
 # QUERY EXECUTIONS
-def snowflake_stages(s3_bucket_name):
-    return {
-        "create_parquet": """
-            create file format if not exists parquet type='parquet'
+def snowflake_stages(db: str, schema: str, s3_bucket_name: str):
+    queries = {
+        "use_db": f"""
+            use database {db}
         """,
-        "create_csv": """
+        "create_schema": f"""
+            create schema if not exists {schema};
+        """,
+        "use_schema": f"""
+            use schema {schema};
+        """,
+        "create_parquet": f"""
+            create file format if not exists parquet type='parquet';
+        """,
+        "create_csv": f"""
             create file format if not exists csv type='csv' -- creates the file format to map incoming data structure to CSV
             field_delimiter = ','
             skip_header=1
         """,
-        "csv": """
-            CREATE STAGE IF NOT EXISTS nhl_raw_data_csv
+        "csv": f"""
+            CREATE STAGE IF NOT EXISTS {db}.{schema}.nhl_raw_data_csv
             STORAGE_INTEGRATION = "aws_s3_integration"
-            URL = f's3://{s3_bucket_name}/'
+            URL = 's3://{s3_bucket_name}/'
             -- CREDENTIALS = ''
             FILE_FORMAT = csv
         """,
-        "parquet": """
-            CREATE STAGE IF NOT EXISTS nhl_raw_data_parquet
+        "parquet": f"""
+            CREATE STAGE IF NOT EXISTS {db}.{schema}.nhl_raw_data_parquet
             STORAGE_INTEGRATION = "aws_s3_integration"
-            URL = f's3://{s3_bucket_name}/'
+            URL = 's3://{s3_bucket_name}/'
             -- CREDENTIALS = ''
             FILE_FORMAT = parquet
         """
     }
+    return queries
 
 
-def snowflake_checks(table):
+def snowflake_checks(db: str, table: str):
     return {
         "columns": f"""
-                        SELECT column_name FROM NHL_STATS.information_schema.columns
-                        WHERE lower(table_name) like '%{table}%'
-                    """
+            SELECT DISTINCT column_name FROM {db}.information_schema.columns
+            WHERE lower(table_name) like '%{table}%'
+        """
     }
 
 
-def snowflake_schema():
-    return {
-        "team_stats": """
-            create or replace table team_stats (
+def snowflake_schema(db, schema):
+    queries = {
+        "use_db": f"use database {db};",
+        "create_schema": f"create schema if not exists {schema};",
+        "use_schema": f"use schema {schema};",
+        "team_stats": f"""
+            create table if not exists {db}.{schema}.team_stats (
                 Team VARCHAR,
                 GP VARCHAR,
                 W VARCHAR,
@@ -55,10 +68,10 @@ def snowflake_schema():
                 RgRec VARCHAR,
                 "RgPt%" VARCHAR,
                 updated_at date
-            )
+            );
         """,
-        "regular_season": """
-            create table if not exists regular_season (
+        "regular_season": f"""
+            create table if not exists {db}.{schema}.regular_season (
                 date date,
                 away_team_id varchar(100),
                 away_goals integer,
@@ -68,8 +81,8 @@ def snowflake_schema():
                 updated_at date
             )
         """,
-        "playoff_season": """
-            create table if not exists playoff_season (
+        "playoff_season": f"""
+            create table if not exists {db}.{schema}.playoff_season (
                 date date,
                 away_team_id varchar(100),
                 away_goals integer,
@@ -80,19 +93,20 @@ def snowflake_schema():
             )
         """
     }
+    return queries
 
 
-def snowflake_cleanup(table, load_year):
+def snowflake_cleanup(db, schema, table, load_year):
     print(
         f"""
         Cleaning up data with query: \n
-        DELETE FROM {table}
+        DELETE FROM {db}.{schema}.{table}
         WHERE date like '{load_year}%'
-         """
+        """
     )
     queries = {
         "dedupe": f"""
-               DELETE FROM  {table}
+               DELETE FROM {db}.{schema}.{table}
                WHERE date like '{load_year}%'
            """
     }
@@ -100,18 +114,21 @@ def snowflake_cleanup(table, load_year):
     return queries
 
 
-def snowflake_ingestion(table, source):
-    print(f"Processing query to ingest data from S3 to Snowflake: {table}")
+def snowflake_ingestion(db, schema, table, source):
+    print(
+        "-"*20,
+        f"Deduplicating source data and loading prepared data: {db}.{schema}.{table}",
+        "-" * 20
+    )
 
-    # REGULAR SEASON DATA CLEAN. USES THE S3 INTEGRATION STAGE FOR THE S3 RAW DATA.
     queries = {
         "ingest_from_stage": f"""
-            COPY INTO {table}
+            COPY INTO {db}.{schema}.{table}
             FROM @nhl_raw_data_csv/{source}/
             FILE_FORMAT = csv
             PATTERN = '.*csv.*';
         """
     }
-    print(f"Query for ingestion from stage: \n\t{queries['ingest_from_stage']}")
+    print(f"Query prepared for ingestion from external stage: \n\t{queries['ingest_from_stage']}")
 
     return queries

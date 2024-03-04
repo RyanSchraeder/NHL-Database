@@ -11,7 +11,7 @@ from src.connectors import s3_conn, get_legacy_session
 from src.snowflake_queries import *
 from src.preprocessing import DataTransform
 
-from src.helpers import setup, snowflake_query_exec 
+from src.helpers import setup, snowflake_query_exec
 
 # Orchestration
 from prefect import flow, task, get_run_logger
@@ -23,7 +23,7 @@ transform = DataTransform
 
 
 @task(name="file_parser")
-def file_parser(source, url, snowflake_conn):
+def file_parser(url, snowflake_conn):
     """ Download raw source data and upload to S3
         Data Source: hockeyreference.com
     """
@@ -34,14 +34,14 @@ def file_parser(source, url, snowflake_conn):
         dataframe = pd.concat(dataframes, axis=0, ignore_index=True).reset_index(drop=True)
 
         logging.info(f'Retrieved data with columns: {dataframe.columns}.')
-        
+
         logging.info('Transforming data...')
         dataframe = transform.teams(dataframe)
 
         logging.info('Checking column mappings...')
-        checks = snowflake_query_exec(snowflake_checks('team_stats'), method=snowflake_conn)
+        checks = snowflake_query_exec(snowflake_checks(db=db, table='team_stats'), method=snowflake_conn)
         logging.info(f'Expected columns from destination: {checks}')
-        len_source, len_dest = len(dataframe.columns), len(checks)
+        len_source, len_dest = len(dataframe.columns), len(checks['columns'])
 
         logging.info(
             f'Destination mappings: {len_dest}'
@@ -89,7 +89,7 @@ def s3_parser(filename: str, data: pd.DataFrame, s3_folder: str, s3_bucket_name:
         logging.info(f'Data stored at {path}')
 
         # Build the targets
-        dst, filename = f'{s3_bucket_name}', f'{s3_folder}/team_stats/{filename}.csv'
+        dst, filename = f'{s3_bucket_name}', f'{s3_folder}/{filename}.csv'
 
         # Retrieve S3 paths & store raw file to s3
         logging.info(f'Storing parsed data in S3 at {filename}')
@@ -101,34 +101,34 @@ def s3_parser(filename: str, data: pd.DataFrame, s3_folder: str, s3_bucket_name:
     except Exception as e:
         logging.error(f'An error occurred when storing data in S3: {e}')
         sys.exit(1)
-        
+
 
 @task(name="snowflake_base_model")
-def snowflake_base_model(snowflake_conn):
+def snowflake_base_model(snowflake_conn, s3_bucket_name, db, schema):
     logging = get_run_logger()
 
     # Create stages
     logging.info("Updating snowflake stages if needed")
-    snowflake_query_exec(snowflake_stages(), method=snowflake_conn)
+    snowflake_query_exec(snowflake_stages(db, schema, s3_bucket_name), method=snowflake_conn)
 
     # Create Schemas
     logging.info("Updating table schemas if needed")
-    snowflake_query_exec(snowflake_schema(), method=snowflake_conn)
+    snowflake_query_exec(snowflake_schema(db, schema), method=snowflake_conn)
 
     return
 
 
 @task(name="snowflake_load")
-def snowflake_load(table, year, source, snowflake_conn):
+def snowflake_load(db, schema, table, year, source, snowflake_conn):
     logging = get_run_logger()
 
     # DEDUPE FROM SNOWFLAKE
     logging.info(f"Deduplicating yearly record data to refresh the schedule")
-    snowflake_query_exec(snowflake_cleanup(table, year), method=snowflake_conn)
+    snowflake_query_exec(snowflake_cleanup(db, schema, table, year), method=snowflake_conn)
 
     # INGEST RAW DATA TO SNOWFLAKE
     logging.info(f"Updating yearly record data")
-    snowflake_query_exec(snowflake_ingestion(table, source), method=snowflake_conn)
+    snowflake_query_exec(snowflake_ingestion(db, schema, table, source), method=snowflake_conn)
 
     return
 
@@ -136,7 +136,11 @@ def snowflake_load(table, year, source, snowflake_conn):
 @flow(
     name='nhl_team_stats', retries=1, retry_delay_seconds=5, log_prints=True
 )
-def nhl_team_stats(source, endpoint, year, s3_bucket_name, snowflake_conn, env):
+def nhl_team_stats(
+        source, endpoint, year,
+        s3_bucket_name, db, schema,
+        snowflake_conn, env
+):
     start = time.time()
     logging = get_run_logger()
 
@@ -146,14 +150,14 @@ def nhl_team_stats(source, endpoint, year, s3_bucket_name, snowflake_conn, env):
 
     # Prepare snowflake stages and schemas
     logging.info('Preparing snowflake base model for ingestion')
-    snowflake_base_model(snowflake_conn)
+    snowflake_base_model(snowflake_conn, s3_bucket_name, db, schema)
 
     # Parse Files from Raw Endpoint
     # Only store data in S3 in Production
     if env == "development":
         try:
             logging.info("Extracting raw data from source, formatting and transformation, and loading it to S3")
-            file_parser(source, url, snowflake_conn)
+            file_parser(url, snowflake_conn)
             logging.info(
                 "\n"
                 "\t Process executed successfully in development. "
@@ -169,19 +173,19 @@ def nhl_team_stats(source, endpoint, year, s3_bucket_name, snowflake_conn, env):
     else:
         # INGEST RAW DATA TO S3
         logging.info("Extracting raw data from source, formatting and transformation, and loading it to S3")
-        output_df = file_parser(source, url, snowflake_conn)
+        output_df = file_parser(url, snowflake_conn)
         s3_parser(filename=filename, data=output_df, s3_folder=source, s3_bucket_name=s3_bucket_name)
 
-        # MINOR TRANSFORMATION & TRANSFER RAW DATA TO SNOWFLAKE
-        # logging.info("Extracting raw data from S3 to transferred into Snowflake")
-        snowflake_load('team_stats', year, source, snowflake_conn)
+        # DEDUPE SOURCE TABLE & TRANSFER RAW DATA
+        table = 'team_stats'
+
+        snowflake_load(db, schema, table, year, source, snowflake_conn)
 
     end = time.time() - start
     logging.info(f'Process Completed. Time elapsed: {end}')
 
 
 if __name__ in "__main__":
-
     parser = argparse.ArgumentParser(
         prog="SnowflakeIngestion",
         description="Move data from raw S3 uploads to a produced Schema in Snowflake"
@@ -192,6 +196,8 @@ if __name__ in "__main__":
     parser.add_argument('--year', default=dt.datetime.now().year)
     parser.add_argument('--s3_bucket_name', default='nhl-data-raw')
     parser.add_argument('--snowflake_conn', default='standard')
+    parser.add_argument('--db', default='nhl_stats')
+    parser.add_argument('--schema', default='raw')
     parser.add_argument('--env', default='development')
 
     args = parser.parse_args()
@@ -200,12 +206,18 @@ if __name__ in "__main__":
     endpoint = args.endpoint if args.endpoint is not None else ""
     year = args.year if args.year is not None else ""
 
-    # Example S3 URI : s3://nhl-data-raw/teams/team_stats.csv
+    # Example S3 URI : s3://nhl-data-raw/season/team_stats.csv
     s3_bucket_name = args.s3_bucket_name if args.s3_bucket_name is not None else ""
+    db = args.db if args.db is not None else ""
+    schema = args.schema if args.schema is not None else ""
     snowflake_conn = args.snowflake_conn if args.snowflake_conn is not None else ""
     env = args.env if args.env is not None else "development"
 
-    print(f"Received Arguments: {args}")
-    
+    (f"Received Arguments: {args}")
+
     # Execute the pipeline
-    nhl_team_stats(source, endpoint, year, s3_bucket_name, snowflake_conn, env)
+    nhl_team_stats(
+        source, endpoint, year,
+        s3_bucket_name, db, schema,
+        snowflake_conn, env
+    )
