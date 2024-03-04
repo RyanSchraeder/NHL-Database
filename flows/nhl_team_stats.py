@@ -83,13 +83,13 @@ def s3_parser(filename: str, data: pd.DataFrame, s3_folder: str, s3_bucket_name:
             os.mkdir('data', mode=0o777)
 
         # Convert DF to CSV File
-        path = f'./data/{filename}.csv'
+        path = f'./data/{filename}_{dt.date.today()}.csv'
         data.to_csv(path, index=False)
 
         logging.info(f'Data stored at {path}')
 
         # Build the targets
-        dst, filename = f'{s3_bucket_name}', f'{s3_folder}/{filename}.csv'
+        dst, filename = f'{s3_bucket_name}', f'{s3_folder}/{filename}_{dt.date.today()}.csv'
 
         # Retrieve S3 paths & store raw file to s3
         logging.info(f'Storing parsed data in S3 at {filename}')
@@ -121,10 +121,6 @@ def snowflake_base_model(snowflake_conn, s3_bucket_name, db, schema):
 @task(name="snowflake_load")
 def snowflake_load(db, schema, table, year, source, snowflake_conn):
     logging = get_run_logger()
-
-    # DEDUPE FROM SNOWFLAKE
-    logging.info(f"Deduplicating yearly record data to refresh the schedule")
-    snowflake_query_exec(snowflake_cleanup(db, schema, table, year), method=snowflake_conn)
 
     # INGEST RAW DATA TO SNOWFLAKE
     logging.info(f"Updating yearly record data")

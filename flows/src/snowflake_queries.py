@@ -97,29 +97,28 @@ def snowflake_schema(db, schema):
 
 
 def snowflake_cleanup(db, schema, table, load_year):
-    print(
-        f"""
-        Cleaning up data with query: \n
-        DELETE FROM {db}.{schema}.{table}
-        WHERE date like '{load_year}%'
-        """
-    )
-    queries = {
-        "dedupe": f"""
-               DELETE FROM {db}.{schema}.{table}
-               WHERE date like '{load_year}%'
-           """
-    }
 
-    return queries
+    if table == 'team_stats':
+        print('Team stats do not need deletion from a season date as they are refreshed records. Not deleting records by season date. Passing')
+        return {}
+    else:
+        print(
+            f"""
+            Cleaning up data with query: \n
+            DELETE FROM {db}.{schema}.{table}
+            WHERE date like '{load_year}%'
+            """
+        )
+        queries = {
+            "dedupe": f"""
+                DELETE FROM {db}.{schema}.{table}
+                WHERE updated_date like '{load_year}%'
+            """
+        }
+        return queries 
 
 
 def snowflake_ingestion(db, schema, table, source):
-    print(
-        "-"*20,
-        f"Deduplicating source data and loading prepared data: {db}.{schema}.{table}",
-        "-" * 20
-    )
 
     queries = {
         "ingest_from_stage": f"""
