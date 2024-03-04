@@ -1,14 +1,19 @@
 # NHL-Database
 Data engineering project utilizing AWS ECS Fargate, CloudFormation (IaC), Snowflake, Docker, Python, SQL, and Prefect to build a data warehouse in Snowflake for accessibility of NHL data. 
 
-## Workflow Architecture
+## Architecture Flow Diagram (Click to Expand)
+<p align="center">
+  <img src="/images/nhl_flow_diagram.png" />
+</p>
+
+## Workflow Process
 1. In Python, source data is retrieved from hockeyreference.com based upon an input parameter to retrieve the appropriate URL, which is then used to scrape data and transform it into tabular format (dataframe).
 2. The capability of the application involves source checks on columns, minor transformations into correct data types, logging, and schema definition. The schemas and Snowflake Stages are updated to appropriate structure to prepare acceptance of incoming data later on.
 3. Within the Python script, connectors are validated for secure and proper connection to external sources Snowflake and AWS S3 followed by transport to AWS S3, destructively overwriting files in place to ensure idempotency of storage. 
   > Ex. The dataframe output is saved with the file convention "NHL_{YYYY}_regular_season.csv". If a file of the current respective type exists, for instance the NHL regular season of the current year, then the latest run will overwrite the file in S3 to avoid duplication.
 4. After the prepared data is successfully stored in AWS S3, the script will check for the updated file and prepare Snowflake for acceptance of the data. This step involves clearing out existent data of the current year and ingestion type before loading updated data. In other words, if you request the pipeline to load the `source` of "seasons", the pipeline will retrieve regular season data for the year you specify (or take the current year if not passed by default) and overwrite such data in the Snowflake location respectively.
 
-#### Possible Outcomes
+### Parameterization
 
 Parameters for the pipeline are established:
 
@@ -22,30 +27,25 @@ Parameters for the pipeline are established:
 | env | Environment connection. Default to 'development'. No data will be loaded in the development environment. |
 
 
-## Flow Diagram (Click to Expand)
-<p align="center">
-  <img src="/images/nhl_flow_diagram.png" />
-</p>
-
-
-## Pipeline Tasks in Prefect
- #### _Development_
+## Orchestration
+### _Pipeline Tasks in Prefect_
+> #### _Development_
  <p align="center">
   <img src="/images/prefectdev.png" />
  </p>
 
- #### _Production_
+> #### _Production_
 <p align="center">
   <img src="/images/task_runs.png" />
 </p>
 
 ### Task Logs Example
- #### _Development_
+> #### _Development_
 <p align="center">
   <img src="/images/prefectdevlogs.png" />
 </p>
  
- #### _Production_
+> #### _Production_
 <p align="center">
   <img src="/images/prefect_logging.png" />
 </p>
@@ -88,3 +88,12 @@ _Prefect_
 <p align="center">
   <img src="/images/no_airflow.png" />
 </p>
+
+
+
+#### WIP
+1. Finish the ingestion sources with different Prefect flows
+2. Establish data models and transformation in the next phase within dbt Cloud
+3. Utilize data to build a Streamlit dashboard via Snowflake
+4. Utilize data to productionalize the initial Stanley Cup Predictions model
+5. Explore streaming architecture possibilities for realtime predictions
