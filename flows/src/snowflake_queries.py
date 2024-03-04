@@ -1,5 +1,5 @@
 # QUERY EXECUTIONS
-def snowflake_stages():
+def snowflake_stages(s3_bucket_name):
     return {
         "create_parquet": """
             create file format if not exists parquet type='parquet'
@@ -12,14 +12,14 @@ def snowflake_stages():
         "csv": """
             CREATE STAGE IF NOT EXISTS nhl_raw_data_csv
             STORAGE_INTEGRATION = "aws_s3_integration"
-            URL = 's3://nhl-data-raw/'
+            URL = f's3://{s3_bucket_name}/'
             -- CREDENTIALS = ''
             FILE_FORMAT = csv
         """,
         "parquet": """
             CREATE STAGE IF NOT EXISTS nhl_raw_data_parquet
             STORAGE_INTEGRATION = "aws_s3_integration"
-            URL = 's3://nhl-data-raw/'
+            URL = f's3://{s3_bucket_name}/'
             -- CREDENTIALS = ''
             FILE_FORMAT = parquet
         """
