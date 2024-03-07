@@ -23,7 +23,7 @@ transform = DataTransform
 
 
 @task(name="file_parser")
-def file_parser(url, snowflake_conn):
+def file_parser(db, url, snowflake_conn):
     """ Download raw source data and upload to S3
         Data Source: hockeyreference.com
     """
@@ -153,7 +153,7 @@ def nhl_team_stats(
     if env == "development":
         try:
             logging.info("Extracting raw data from source, formatting and transformation, and loading it to S3")
-            file_parser(url, snowflake_conn)
+            file_parser(db, url, snowflake_conn)
             logging.info(
                 "\n"
                 "\t Process executed successfully in development. "
@@ -169,7 +169,7 @@ def nhl_team_stats(
     else:
         # INGEST RAW DATA TO S3
         logging.info("Extracting raw data from source, formatting and transformation, and loading it to S3")
-        output_df = file_parser(url, snowflake_conn)
+        output_df = file_parser(db, url, snowflake_conn)
         s3_parser(filename=filename, data=output_df, s3_folder=source, s3_bucket_name=s3_bucket_name)
 
         # DEDUPE SOURCE TABLE & TRANSFER RAW DATA
