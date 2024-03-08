@@ -123,7 +123,8 @@ jobs:
           pip install pyopenssl --upgrade
           pip install s3fs
           pip install prefect prefect-aws
-          
+          pip install --upgrade jsonschema
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@0e613a0980cbf65ed5b322eb7a1e075d28913a83
         with:
