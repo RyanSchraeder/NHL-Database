@@ -112,7 +112,7 @@ def snowflake_cleanup(db, schema, table, load_year):
         queries = {
             "dedupe": f"""
                 DELETE FROM {db}.{schema}.{table}
-                WHERE updated_date like '{load_year}%'
+                WHERE updated_at like '{load_year}%'
             """
         }
         return queries 
