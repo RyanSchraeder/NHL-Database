@@ -1,7 +1,7 @@
 # NHL-Database
 Data engineering project utilizing AWS ECS Fargate, CloudFormation (IaC), Snowflake, Docker, Python, SQL, and Prefect to build a data warehouse in Snowflake for accessibility of NHL data. 
 
-## Architecture Flow Diagram (Click to Expand)
+## Architecture
 <p align="center">
   <img src="images/NHL Pipeline Diagram.drawio.png" />
 </p>
