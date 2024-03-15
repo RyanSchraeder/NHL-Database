@@ -88,10 +88,3 @@ _Prefect_
 <p align="center">
   <img src="/images/no_airflow.png" />
 </p>
-
-
-
-#### WIP
-1. Utilize data to build a Streamlit dashboard via Snowflake
-2. Utilize data to productionalize the initial Stanley Cup Predictions model
-3. Explore streaming architecture possibilities for realtime predictions
