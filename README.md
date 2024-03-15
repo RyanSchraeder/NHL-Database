@@ -62,20 +62,6 @@ Parameters for the pipeline are established:
 
 ![image](https://github.com/RyanSchraeder/NHL-Database/assets/30241666/00f739ae-cb1f-4c70-9b35-2b3c71e7d288)
 
-
-## Output Data in Snowflake 
-
-### Seasonal Games
-<p align="center">
-  <img src="/images/snowflake_regular_season.png" />
-</p>
-_Note_: The seasonal games resource will ingest all games known to occur in the NHL, even in the near future. The playoff games are treated as a regular-season game in this data, so they're also included in ingestion. 
-
-#### Team Statistics
-<p align="center">
-  <img src="/images/" />
-</p>
-
 # dbt Cloud
 dbt Cloud is used to transform, format, and prepare the complete dataset used by a machine learning model. The data is used from Snowflake to perform curation of a dataset that must be encoded for a classification model, and the SQL within dbt is utilized for that. 
 Once the dataset is curated, a post-operation hook is called to train the model within Snowflake using Snowpark on the latest form of the curated dataset. This is scheduled to occur after the data pipelines are all completed. 
