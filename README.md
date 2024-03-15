@@ -3,7 +3,7 @@ Data engineering project utilizing AWS ECS Fargate, CloudFormation (IaC), Snowfl
 
 ## Architecture Flow Diagram (Click to Expand)
 <p align="center">
-  <img src="/images/nhl_flow_diagram.png" />
+  <img src="images/NHL Pipeline Diagram.drawio.png" />
 </p>
 
 ## Workflow Process
