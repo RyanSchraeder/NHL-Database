@@ -6,6 +6,14 @@ Data engineering project utilizing AWS ECS Fargate, CloudFormation (IaC), Snowfl
   <img src="images/NHL Pipeline Diagram.drawio.png" />
 </p>
 
+# Development Process
+Both Development and Main branches are independent, building their own infrastructure within the full stack separated by their naming conventions `development` and `production`. The code is designed to dry-run for `development` while a full ingestion will be executed for `production`. For testing, the dry-run functionality is incorporated into the CI/CD pipeline to ensure the code is running as intended and successfully. 
+
+The infrastructure is made on AWS CloudFormation and pushed up into AWS via GitHub Actions, which are all manually triggered pipelines to aid the resource provisioning for the ECS Cluster, ECR Repository, and the ECS Task Definition. When building on Development, you'll notice a full architecture will be provisioned as well as flows made on Prefect which will run on a cron-based schedule. The code executed within the containers, however, will be a dry-run. You may assume the opposite when deploying via the Main branch in GitHub Actions, where the only difference will be the code itself running a full ingestion per the `production` paramater passed in. 
+
+While you _should absolutely separate environments by AWS Account associated with development and production_, this is a personal project, meaning you could technically run production on development. However, the separation of the two is mimicked in this project to show how that would actually work. 
+In addition to the `development` and `production` variables, a real internal project would have an AWS Account ID in your GitHub Secrets per each branch. 
+
 ## Workflow Process
 1. In Python, source data is retrieved from hockeyreference.com based upon an input parameter to retrieve the appropriate URL, which is then used to scrape data and transform it into tabular format (dataframe).
 2. The capability of the application involves source checks on columns, minor transformations into correct data types, logging, and schema definition. The schemas and Snowflake Stages are updated to appropriate structure to prepare acceptance of incoming data later on.
