@@ -1,6 +1,9 @@
 # QUERY EXECUTIONS
 def snowflake_stages(db: str, schema: str, s3_bucket_name: str):
     queries = {
+        "create_db": f"""
+            create database if not exists {db}
+        """,
         "use_db": f"""
             use database {db}
         """,
@@ -47,6 +50,7 @@ def snowflake_checks(db: str, table: str):
 
 def snowflake_schema(db, schema):
     queries = {
+        "create_db": f"create database if not exists {db};",
         "use_db": f"use database {db};",
         "create_schema": f"create schema if not exists {schema};",
         "use_schema": f"use schema {schema};",
