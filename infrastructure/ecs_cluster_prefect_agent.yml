@@ -154,6 +154,11 @@ Resources:
       Cpu: !Ref cpu
       Memory: !Ref memory
       NetworkMode: awsvpc
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - !Ref PrefectECSServiceSubnet
       ExecutionRoleArn: !Ref ExecutionRole
       TaskRoleArn: !Ref TaskRole
       ContainerDefinitions:
