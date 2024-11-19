@@ -14,3 +14,4 @@ snowflake-connector-python[pandas]
 python-dotenv
 cryptography==38.0.4
 pyopenssl==22.1.0
+griffe==0.48
