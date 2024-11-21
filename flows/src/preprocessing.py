@@ -5,17 +5,19 @@
 import pandas as pd
 import numpy as np
 import warnings
-from pydantic import BaseModel, ValidationError, ConfigDict
+from pydantic import BaseModel as PydanticBaseModel, ValidationError, ConfigDict
 from typing import Optional, List
 from datetime import datetime as dt
 
 # Suppress FutureWarning messages
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
+# Pass-through class that allows for any arbitrary datatypes. Dataframes are purpose for this.
+class BaseModel(PydanticBaseModel):
+    class Config:
+        arbitrary_types_allowed = True
 
 class DataTransform(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
     dataframe: pd.DataFrame
     date: dt
 
