@@ -35,12 +35,12 @@ on:
       prefect-version:
         description: Prefect version for flows
         required: true
-        default: '2.*'
+        default: '3.*'
         type: string
       aws-region:
         description: AWS Region
         required: true
-        default: 'us-east-1'
+        default: 'us-east-2'
         type: string
 
 env:
