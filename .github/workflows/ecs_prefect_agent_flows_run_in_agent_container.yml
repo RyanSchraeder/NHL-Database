@@ -138,7 +138,7 @@ jobs:
           echo "flow_manifest=$FLOW_NAME.yaml" >> $GITHUB_OUTPUT
 
       - name: Upload YAML deployment manifest as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Deployment YAML manifests
           path: ${{ steps.build.outputs.flow_manifest }}
@@ -223,7 +223,7 @@ jobs:
         run: aws ecs describe-task-definition --task-definition ${{ env.PROJECT }} --query taskDefinition > task-definition.json
 
       - name: Upload task definition as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ECS task definition
           path: task-definition.json
