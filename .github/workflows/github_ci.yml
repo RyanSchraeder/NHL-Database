@@ -168,7 +168,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       
       - name: Prefect Auth
-        uses: PrefectHQ/actions-prefect-auth@v1
+        uses: PrefectHQ/actions-prefect-auth@v2
         with:
           prefect-api-key: ${{ secrets.PREFECT_API_KEY }}
           prefect-workspace: ${{ secrets.PREFECT_WORKSPACE }}
