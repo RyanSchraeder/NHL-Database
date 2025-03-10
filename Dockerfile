@@ -9,8 +9,5 @@ WORKDIR /opt/NHL-Database/
 # Add our flow code to the image
 COPY flows/ /opt/NHL-Database/flows/
 
-RUN ls -ltr
-RUN prefect block register -m prefect_aws.ecs
-
 # Run our flow script when the container starts
 CMD ["python", "flows/snowflake_transfer.py", "seasons"]
