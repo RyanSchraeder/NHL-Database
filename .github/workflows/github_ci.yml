@@ -78,12 +78,28 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
+      - name: Install AWS CLI
+        id: install-aws-cli
+        uses: unfor19/install-aws-cli-action@master
+        with:
+          version: 2     # default
+          verbose: false # default
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+      - name: Upgrade pip
+        run: python3 -m pip install --upgrade pip
+      - name: Display Python version
+        run: python -c "import sys; print(sys.version)"
+      - name: Display AWS CLI version
+        run: aws --version
       - name: Checkout branch
         uses: actions/checkout@v1
       - name: Install requirements.txt
         run: |
           python --version
-          # python -m pip install tea "cup >= 3.2.13"
+          python -m pip install tea "cup >= 3.2.13"
           python -m pip install setuptools
           pip install -r requirements.txt
       - name: Set environment variables
@@ -115,6 +131,22 @@ jobs:
     name: Run Prefect Deployment to ECS
     runs-on: ubuntu-latest
     steps:
+      - name: Install AWS CLI
+        id: install-aws-cli
+        uses: unfor19/install-aws-cli-action@master
+        with:
+          version: 2     # default
+          verbose: false # default
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+      - name: Upgrade pip
+        run: python3 -m pip install --upgrade pip
+      - name: Display Python version
+        run: python -c "import sys; print(sys.version)"
+      - name: Display AWS CLI version
+        run: aws --version
       - name: Checkout
         uses: actions/checkout@v4
 
