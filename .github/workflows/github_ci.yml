@@ -376,7 +376,7 @@ jobs:
           prefect deployment build flows/nhl_team_stats.py:nhl_team_stats -sb s3/$BLOCK -q $PROJECT -v $GITHUB_SHA -a -t $PROJECT -n $PROJECT -o nhl_team_stats.yaml -ib ecs-task/$BLOCK --skip-upload > ${{ env.PROJECT }}.yaml
           
       - name: Upload YAML deployment manifest as artifact
-        uses: 
+        uses: actions/upload-artifact@v4
         with:
           name: Deployment YAML manifests
           path: "/home/runner/work/NHL-Database/NHL-Database/${{ env.PROJECT }}.yaml"
