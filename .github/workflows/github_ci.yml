@@ -101,6 +101,7 @@ jobs:
           python --version
           python -m pip install tea "cup >= 3.2.13"
           python -m pip install setuptools
+          pip install -U "prefect[snowflake]" prefect-aws
           pip install -r requirements.txt
       - name: Set environment variables
         run: |
@@ -157,7 +158,7 @@ jobs:
           python -m pip install tea "cup >= 3.2.13"
           pip install pyopenssl --upgrade
           pip install s3fs
-          pip install prefect prefect-aws
+          pip install -U "prefect[snowflake]" prefect-aws
           pip install --upgrade jsonschema
 
       - name: Configure AWS credentials
@@ -346,7 +347,8 @@ jobs:
 
       - name: Python dependencies
         run: |
-          pip install prefect==$PREFECT_VERSION
+          # pip install prefect==$PREFECT_VERSION
+          pip install -U "prefect[snowflake]" prefect-aws
           pip install -r requirements.txt
 
       - name: Prefect Cloud login
