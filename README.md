@@ -66,7 +66,7 @@ Parameters for the pipeline are established:
 dbt Cloud is used to transform, format, and prepare the complete dataset used by a machine learning model. The data is used from Snowflake to perform curation of a dataset that must be encoded for a classification model, and the SQL within dbt is utilized for that. 
 Once the dataset is curated, a post-operation hook is called to train the model within Snowflake using Snowpark on the latest form of the curated dataset. This is scheduled to occur after the data pipelines are all completed. 
 
-# Why Not Airflow? 
+# Why Not Managed Airflow? 
 
 #### Short Answer: *Saving 8.5x+ the Cost With Prefect!*
 - Additionally, Prefect provides robust integration with existing code to enable smooth application of my custom modules, tests, and configurations without the pain of refactoring to suit Airflow hooks, plugins, etc. 
@@ -74,7 +74,7 @@ Once the dataset is curated, a post-operation hook is called to train the model 
 - Workflow is efficient with local testing thanks to Prefect Cloud
 
 
-### Airflow Cost Vs. Prefect Architecture:
+### AWS MWAA Airflow Cost Vs. Prefect Architecture:
 
 _Airflow_
 
